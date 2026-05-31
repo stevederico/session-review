@@ -100,7 +100,10 @@ export default function BrowseView() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectsError, setProjectsError] = useState('');
 
-  const [selectedProject, setSelectedProject] = useState('');
+  // Default to "All projects" so the Select is controlled with a defined value
+  // from the first render (passing undefined makes Base UI treat it as
+  // uncontrolled, then switching to a real value warns/breaks).
+  const [selectedProject, setSelectedProject] = useState(ALL_PROJECTS);
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsError, setSessionsError] = useState('');
@@ -245,7 +248,7 @@ export default function BrowseView() {
         <aside className="flex min-h-0 shrink-0 flex-col border-b border-border md:w-80 md:border-b-0 md:border-r">
           <div className="shrink-0 p-3">
             <Select
-              value={selectedProject || undefined}
+              value={selectedProject}
               onValueChange={handleSelectProject}
               disabled={projectsLoading || !!projectsError}
             >
