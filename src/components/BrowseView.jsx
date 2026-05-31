@@ -113,7 +113,7 @@ export default function BrowseView() {
   const [isReindexing, setIsReindexing] = useState(false);
   const [status, setStatus] = useState('');
 
-  /** Fetch all projects and auto-select the first one. */
+  /** Fetch all projects; default the picker to "All projects". */
   const loadProjects = useCallback(async () => {
     setProjectsLoading(true);
     setProjectsError('');
@@ -121,7 +121,7 @@ export default function BrowseView() {
       const data = await apiRequest('/cc/projects');
       const list = Array.isArray(data) ? data : [];
       setProjects(list);
-      setSelectedProject((prev) => prev || list[0]?.project || ALL_PROJECTS);
+      setSelectedProject((prev) => prev || ALL_PROJECTS);
     } catch (err) {
       console.error('Failed to load projects', err);
       setProjectsError('Could not load projects. Check that the local server is running.');
@@ -250,7 +250,14 @@ export default function BrowseView() {
               disabled={projectsLoading || !!projectsError}
             >
               <SelectTrigger className="w-full" aria-label="Filter by project">
-                <SelectValue placeholder="Select a project" />
+                <SelectValue placeholder="Select a project">
+                  {(value) => {
+                    if (!value) return 'Select a project';
+                    if (value === ALL_PROJECTS) return 'All projects';
+                    const p = projects.find((proj) => proj.project === value);
+                    return p ? `${p.name} (${p.sessions})` : value;
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>

@@ -256,7 +256,13 @@ export default function SearchView() {
 
           <Select value={project} onValueChange={setProject}>
             <SelectTrigger className="w-full sm:w-56" aria-label="Filter by project">
-              <SelectValue placeholder="All projects" />
+              <SelectValue placeholder="All projects">
+                {(value) => {
+                  if (!value || value === ALL_PROJECTS) return 'All projects';
+                  const p = projects.find((proj) => proj.project === value);
+                  return p ? (p.name || p.cwd || p.project) : value;
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
