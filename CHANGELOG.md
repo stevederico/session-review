@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0
+
+  Archive transcript snapshots
+  Read archive first
+  Keep purged sessions
+
 ## 0.11.0
 
   Add project tagging

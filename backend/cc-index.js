@@ -3,12 +3,18 @@
  *
  * Reads local JSONL session transcripts from ~/.claude/projects, builds a
  * SQLite index (sessions metadata + FTS5 full-text) for fast browse / search /
- * analytics. Indexing is incremental by file mtime. The full transcript is
- * always read fresh from the source file so rendering keeps full fidelity
- * (thinking, tool_use, tool_result, attachments).
+ * analytics. Indexing is incremental by file mtime.
+ *
+ * Claude Code purges transcripts older than `cleanupPeriodDays` (default 30), so
+ * each reindex also snapshots every source `.jsonl` into a cc-index-owned
+ * archive ({@link ARCHIVE_DIR}). Full transcripts are read archive-first, and
+ * sessions whose source was purged are kept as long as the archive copy
+ * survives — making the index a permanent record independent of Claude Code's
+ * cleanup. Reads keep full fidelity (thinking, tool_use, tool_result,
+ * attachments).
  */
 import { DatabaseSync } from 'node:sqlite';
-import { readdirSync, readFileSync, statSync, existsSync, mkdirSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, basename } from 'node:path';
 
@@ -29,6 +35,42 @@ function stripCmdTags(s) {
 }
 const DB_DIR = join(import.meta.dirname, 'databases');
 const DB_PATH = join(DB_DIR, 'ccindex.db');
+/** Permanent transcript snapshots, mirroring ~/.claude/projects/<project>/<id>.jsonl. */
+const ARCHIVE_DIR = join(DB_DIR, 'archive');
+
+/**
+ * Deterministic archive path for a session — independent of the stored source
+ * `file`, so old rows resolve to the archive without a schema migration.
+ * @param {string} project - Encoded ~/.claude/projects folder name.
+ * @param {string} id - Session id (source filename without `.jsonl`).
+ * @returns {string} Absolute path to the archived transcript.
+ */
+export function archivePathFor(project, id) {
+  return join(ARCHIVE_DIR, project || '_', `${id}.jsonl`);
+}
+
+/**
+ * Snapshot a source transcript into {@link ARCHIVE_DIR}, copying only when the
+ * source is newer than (or absent from) the archive. Best-effort: on any I/O
+ * failure it falls back to the source path so indexing never breaks.
+ * @param {{project: string, name: string, mtime: number}} f - Source file entry.
+ * @returns {string} The archive path on success, else the source path.
+ */
+function archiveFile(f) {
+  const src = join(PROJECTS_DIR, f.project, f.name);
+  const dest = join(ARCHIVE_DIR, f.project, f.name);
+  try {
+    let fresh = true;
+    try { fresh = statSync(dest).mtimeMs < f.mtime; } catch { /* missing → copy */ }
+    if (fresh) {
+      mkdirSync(join(ARCHIVE_DIR, f.project), { recursive: true });
+      copyFileSync(src, dest);
+    }
+    return dest;
+  } catch {
+    return src;
+  }
+}
 
 /** Pricing per 1M tokens (USD). Matched by substring of the model id. */
 const PRICING = {
@@ -351,20 +393,24 @@ export function reindex(force = false) {
   for (const f of files) {
     const id = f.name.replace(/\.jsonl$/, '');
     seen.add(id);
+    // Snapshot every source file each run (idempotent, copies only when newer),
+    // so existing rows get backfilled and survive Claude Code's cleanup.
+    const archived = archiveFile(f);
     if (!force && known.has(id) && known.get(id) === f.mtime) continue;
     const parsed = parseFile(f);
     if (!parsed) continue;
+    parsed.row.file = archived; // read transcripts from the durable copy
     insSession.run(parsed.row);
     delFts.run(id);
     for (const m of parsed.fts) insFts.run(m.session_id, m.ts, m.role, m.project, m.body);
     changed++;
   }
-  // prune deleted files
-  for (const id of known.keys()) {
-    if (!seen.has(id)) {
-      d.prepare('DELETE FROM sessions WHERE id = ?').run(id);
-      delFts.run(id);
-    }
+  // Prune only sessions whose source AND archive are both gone — a purged
+  // transcript with a surviving snapshot stays indexed.
+  for (const r of d.prepare('SELECT id, project FROM sessions').all()) {
+    if (seen.has(r.id) || existsSync(archivePathFor(r.project, r.id))) continue;
+    d.prepare('DELETE FROM sessions WHERE id = ?').run(r.id);
+    delFts.run(r.id);
   }
   lastIndex = changed;
   return { files: files.length, changed };
@@ -463,9 +509,13 @@ export function session(id) {
   meta.project_key = resolved.key;
   meta.project_name = resolved.name;
   meta.overridden = overrides.has(meta.id);
+  // Prefer the durable archive snapshot; fall back to the stored source path
+  // (older rows indexed before archiving, or an archive copy that failed).
+  const archived = archivePathFor(meta.project, meta.id);
+  const readPath = existsSync(archived) ? archived : meta.file;
   let records = [];
   try {
-    records = readFileSync(meta.file, 'utf8')
+    records = readFileSync(readPath, 'utf8')
       .split('\n')
       .filter((l) => l.trim())
       .map((l) => { try { return JSON.parse(l); } catch { return null; } })
