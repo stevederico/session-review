@@ -16,6 +16,7 @@ import X from '@stevederico/skateboard-ui/icons/X';
 import Markdown from '../lib/markdownRender.js';
 import { formatDate, shortModel, formatTokens } from '../lib/format.js';
 import { useCopy } from '../lib/useCopy.js';
+import { stripCommandTags } from '../lib/markdown.js';
 
 const ICON_SIZE = 16;
 const SMALL_ICON_SIZE = 14;
@@ -190,7 +191,7 @@ function deriveMessages(records) {
       if (userTextParts.length) {
         messages.push({
           role: 'user',
-          text: userTextParts.join('\n\n'),
+          text: stripCommandTags(userTextParts.join('\n\n')),
           timestamp: record?.timestamp,
         });
       }
@@ -200,8 +201,9 @@ function deriveMessages(records) {
     if (type === 'system') {
       const text =
         typeof record?.content === 'string' ? record.content : stringifyContent(record?.content);
-      if (text && text.trim()) {
-        messages.push({ role: 'system', text, timestamp: record?.timestamp });
+      const cleanText = stripCommandTags(text);
+      if (cleanText && cleanText.trim()) {
+        messages.push({ role: 'system', text: cleanText, timestamp: record?.timestamp });
       }
       continue;
     }
