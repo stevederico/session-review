@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0
+
+  Make stat cards clickable
+  Cycle tokens day/month/total
+  Cycle cost day/month/total
+  Roll up monthly client-side
+
 ## 0.13.0
 
   Remove transcript archive

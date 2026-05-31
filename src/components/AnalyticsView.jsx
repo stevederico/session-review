@@ -91,11 +91,30 @@ const PROJECT_SORTS = [
 
 const COST_DISCLAIMER = 'Costs are estimates based on public per-model pricing.';
 
+/** Period cycle for the clickable Avg Tokens and Est. Cost summary cards. */
+const PERIOD_CYCLE = ['day', 'month', 'total'];
+
+/**
+ * Next period in {@link PERIOD_CYCLE}, wrapping around to the start. Shaped as a
+ * setState updater so it can be passed straight to a state setter.
+ * @param {'day'|'month'|'total'} period - The current period.
+ * @returns {'day'|'month'|'total'} The next period to display.
+ */
+const nextPeriod = (period) => PERIOD_CYCLE[(PERIOD_CYCLE.indexOf(period) + 1) % PERIOD_CYCLE.length];
+
+/**
+ * Arithmetic mean of a list of numbers.
+ * @param {number[]} values - The numbers to average.
+ * @returns {number} The mean, or 0 when the list is empty.
+ */
+const mean = (values) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0);
+
 /**
  * Analytics dashboard for Claude Code usage and cost.
  *
- * Fetches `/cc/stats` on mount and renders summary stat cards (including
- * average tokens/day), a tokens-per-day bar chart with per-bar date labels and
+ * Fetches `/cc/stats` on mount and renders summary stat cards (the Avg Tokens
+ * and Est. Cost cards cycle through per-day, per-month, and total when
+ * clicked), a tokens-per-day bar chart with per-bar date labels and
  * a hover/focus tooltip showing the day and its token count, a by-model table,
  * and a projects breakdown sortable by cost, tokens, messages, sessions, or
  * created/updated date. Handles loading, error, and empty states.
@@ -107,6 +126,9 @@ export default function AnalyticsView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [projectSort, setProjectSort] = useState('cost');
+  // The Avg Tokens and Est. Cost cards each cycle day → month → total on click.
+  const [tokenPeriod, setTokenPeriod] = useState('day');
+  const [costPeriod, setCostPeriod] = useState('total');
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -182,16 +204,55 @@ export default function AnalyticsView() {
   }
 
   const dailyAscending = [...byDay].reverse();
-  const dailyTokenTotal = dailyAscending.reduce((sum, d) => sum + (Number(d.tokens) || 0), 0);
-  // Average over days that actually had activity, matching the chart below.
-  const avgTokensPerDay = dailyAscending.length ? dailyTokenTotal / dailyAscending.length : 0;
+
+  // Roll the per-day rows up into per-month buckets (YYYY-MM) so the cards can
+  // average over months too. byDay already covers every day that had activity.
+  const monthMap = new Map();
+  for (const day of byDay) {
+    const month = String(day.day).slice(0, 7);
+    const bucket = monthMap.get(month) ?? { tokens: 0, cost: 0 };
+    bucket.tokens += Number(day.tokens) || 0;
+    bucket.cost += Number(day.cost) || 0;
+    monthMap.set(month, bucket);
+  }
+  const byMonth = [...monthMap.values()];
+
+  // Averages run over the periods that actually had activity, matching the chart.
+  const avgTokensPerDay = mean(byDay.map((d) => Number(d.tokens) || 0));
+  const avgTokensPerMonth = mean(byMonth.map((m) => m.tokens));
+  const avgCostPerDay = mean(byDay.map((d) => Number(d.cost) || 0));
+  const avgCostPerMonth = mean(byMonth.map((m) => m.cost));
+
+  // Each clickable card maps its current period to a label + formatted value.
+  const tokenViews = {
+    day: { label: 'Avg Tokens/Day', value: formatTokens(avgTokensPerDay) },
+    month: { label: 'Avg Tokens/Month', value: formatTokens(avgTokensPerMonth) },
+    total: { label: 'Total Tokens', value: formatTokens(totals.tokens) },
+  };
+  const costViews = {
+    day: { label: 'Avg Cost/Day', value: formatCost(avgCostPerDay) },
+    month: { label: 'Avg Cost/Month', value: formatCost(avgCostPerMonth) },
+    total: { label: 'Est. Cost', value: formatCost(totals.cost) },
+  };
 
   const statCards = [
-    { label: 'Sessions', value: totals.sessions.toLocaleString(), Icon: MessagesSquare },
-    { label: 'Messages', value: totals.messages.toLocaleString(), Icon: MessageCircle },
-    { label: 'Tokens', value: formatTokens(totals.tokens), Icon: Coins },
-    { label: 'Avg Tokens/Day', value: formatTokens(avgTokensPerDay), Icon: TrendingUp },
-    { label: 'Est. Cost', value: formatCost(totals.cost), Icon: DollarSign },
+    { key: 'sessions', label: 'Sessions', value: totals.sessions.toLocaleString(), Icon: MessagesSquare },
+    { key: 'messages', label: 'Messages', value: totals.messages.toLocaleString(), Icon: MessageCircle },
+    { key: 'tokens', label: 'Tokens', value: formatTokens(totals.tokens), Icon: Coins },
+    {
+      key: 'avgTokens',
+      label: tokenViews[tokenPeriod].label,
+      value: tokenViews[tokenPeriod].value,
+      Icon: TrendingUp,
+      onClick: () => setTokenPeriod(nextPeriod),
+    },
+    {
+      key: 'cost',
+      label: costViews[costPeriod].label,
+      value: costViews[costPeriod].value,
+      Icon: DollarSign,
+      onClick: () => setCostPeriod(nextPeriod),
+    },
   ];
 
   const activeSort = PROJECT_SORTS.find((s) => s.value === projectSort) ?? PROJECT_SORTS[0];
@@ -213,17 +274,38 @@ export default function AnalyticsView() {
       <Header title="Analytics" />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {statCards.map(({ label, value, Icon }) => (
-            <Card key={label}>
-              <CardContent className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-1">
-                  <span className="text-label-sm text-muted-foreground">{label}</span>
-                  <span className="text-heading-lg">{value}</span>
-                </div>
-                <Icon size={24} className="text-muted-foreground" aria-hidden="true" />
-              </CardContent>
-            </Card>
-          ))}
+          {statCards.map(({ key, label, value, Icon, onClick }) => {
+            const interactive = Boolean(onClick);
+            return (
+              <Card
+                key={key}
+                {...(interactive
+                  ? {
+                      role: 'button',
+                      tabIndex: 0,
+                      onClick,
+                      onKeyDown: (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onClick();
+                        }
+                      },
+                      'aria-label': `${label}. Activate to change the time period.`,
+                      className:
+                        'cursor-pointer transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    }
+                  : {})}
+              >
+                <CardContent className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-label-sm text-muted-foreground">{label}</span>
+                    <span className="text-heading-lg">{value}</span>
+                  </div>
+                  <Icon size={24} className="text-muted-foreground" aria-hidden="true" />
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <p className="mt-3 text-label-sm text-muted-foreground">{COST_DISCLAIMER}</p>
