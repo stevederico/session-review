@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+  Add tokens-per-day chart
+  Add avg tokens/day
+  Sort projects flexibly
+  Aggregate token stats
+  Fold git worktrees
+
 ## 0.5.0
   Add watch dev scripts
 
