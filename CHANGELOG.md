@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.0
+  Add watch dev scripts
+
 ## 0.4.0
 
   Prefix folder name
