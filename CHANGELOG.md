@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.0
+
+  Remove static tokens card
+  Make all cards adaptive
+  Cycle sessions and messages
+  Remove cost disclaimer
+  Remove tooltip date
+
 ## 0.14.0
 
   Make stat cards clickable
