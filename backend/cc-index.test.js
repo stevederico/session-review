@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractText, priceFor, costOf } from './cc-index.js';
+import { extractText, priceFor, costOf, canonicalProject } from './cc-index.js';
 
 test('extractText returns a plain string message body', () => {
   assert.equal(extractText({ message: { role: 'user', content: 'hello' } }), 'hello');
@@ -47,4 +47,34 @@ test('costOf prices 1M opus input tokens', () => {
 
 test('costOf prices 1M sonnet output tokens', () => {
   assert.equal(costOf({ out_tok: 1000000, model: 'claude-sonnet-4-6' }), 15);
+});
+
+test('canonicalProject uses the cwd basename for a plain repo', () => {
+  assert.deepEqual(
+    canonicalProject('/Users/dev/projects/session-review'),
+    { key: '/Users/dev/projects/session-review', name: 'cc-review' }
+  );
+});
+
+test('canonicalProject folds a git worktree into its parent repo', () => {
+  assert.deepEqual(
+    canonicalProject('/Users/dev/projects/demo-app/.claude/worktrees/crazy-johnson-a99b2c'),
+    { key: '/Users/dev/projects/demo-app', name: 'dottie-desktop' }
+  );
+});
+
+test('canonicalProject folds a dash-encoded worktree folder name', () => {
+  const { name } = canonicalProject('', '-Users-dev-projects-demo-app--claude-worktrees-crazy-johnson-a99b2c');
+  assert.equal(name, '-Users-dev-projects-demo-app');
+});
+
+test('canonicalProject prefers cwd over the encoded project fallback', () => {
+  assert.equal(
+    canonicalProject('/Users/dev/projects/demo-app', '-Users-dev-projects-demo-app').name,
+    'onyx'
+  );
+});
+
+test('canonicalProject strips a trailing slash', () => {
+  assert.equal(canonicalProject('/Users/dev/projects/demo-app/').name, 'onyx');
 });

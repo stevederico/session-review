@@ -51,6 +51,59 @@ export function costOf({ in_tok = 0, out_tok = 0, cache_create = 0, cache_read =
   return (in_tok * p.in + out_tok * p.out + cache_create * p.cacheWrite + cache_read * p.cacheRead) / 1e6;
 }
 
+/**
+ * Resolve a session's canonical project from its working directory.
+ *
+ * Collapses a repo's Claude Code git worktrees — nested at
+ * `<repo>/.claude/worktrees/<slug>` — back onto the parent repo, so a repo and
+ * all its worktrees aggregate as one project. Prefers the real `cwd` over the
+ * dash-encoded transcript folder name, which can't be reliably decoded to a
+ * path because folder names legitimately contain dashes.
+ *
+ * @param {string} cwd - Working directory captured from the transcript.
+ * @param {string} [project] - Encoded ~/.claude/projects folder name (fallback).
+ * @returns {{key: string, name: string}} Stable grouping key + display name.
+ */
+export function canonicalProject(cwd, project = '') {
+  let path = (cwd && cwd.trim()) ? cwd.trim() : (project || '');
+  // Collapse a git worktree path onto its parent repo. Current transcripts nest
+  // worktrees at "<repo>/.claude/worktrees/<slug>"; the dash-encoded folder name
+  // renders that same path as "...--claude-worktrees-<slug>".
+  const wt = path.search(/[/\\]\.claude[/\\]worktrees[/\\]|--claude-worktrees-/);
+  if (wt !== -1) path = path.slice(0, wt);
+  const key = path.replace(/[/\\]+$/, '');
+  const name = basename(key) || key || '(unknown)';
+  return { key, name };
+}
+
+/**
+ * Group session rows by canonical project, summing usage metrics.
+ *
+ * @param {object[]} rows - Rows carrying `cwd`, `project`, and any of
+ *   `msg_count`, `tokens`, `cost`, `first_ts`, `last_ts`.
+ * @returns {object[]} One aggregate per project: `{project, name, cwd,
+ *   sessions, messages, tokens, cost, created, updated}` (unsorted).
+ */
+function groupByProject(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    const { key, name } = canonicalProject(r.cwd, r.project);
+    let g = groups.get(key);
+    if (!g) {
+      g = { project: key, name, cwd: key, sessions: 0, messages: 0,
+            tokens: 0, cost: 0, created: '', updated: '' };
+      groups.set(key, g);
+    }
+    g.sessions += 1;
+    g.messages += r.msg_count || 0;
+    g.tokens += r.tokens || 0;
+    g.cost += r.cost || 0;
+    if (r.first_ts && (!g.created || r.first_ts < g.created)) g.created = r.first_ts;
+    if (r.last_ts && r.last_ts > g.updated) g.updated = r.last_ts;
+  }
+  return [...groups.values()];
+}
+
 let db;
 
 function getDb() {
@@ -238,32 +291,54 @@ export function reindex(force = false) {
   return { files: files.length, changed };
 }
 
+/**
+ * List projects with aggregate session counts, messages, cost, and recency.
+ *
+ * Sessions are grouped by their canonical project (see {@link canonicalProject}),
+ * so a repo's git worktrees fold into the parent repo. One row per project,
+ * most-recently-active first.
+ *
+ * @returns {{project: string, name: string, cwd: string, sessions: number,
+ *   messages: number, last_ts: string, cost: number}[]}
+ */
 export function projects() {
   const d = getDb();
   reindex();
-  return d.prepare(`
-    SELECT project,
-           MAX(cwd) AS cwd,
-           COUNT(*) AS sessions,
-           SUM(msg_count) AS messages,
-           MAX(last_ts) AS last_ts,
-           SUM(cost) AS cost
-    FROM sessions GROUP BY project ORDER BY last_ts DESC
-  `).all().map((r) => ({ ...r, name: basename(r.cwd || r.project) }));
+  const rows = d.prepare(
+    'SELECT cwd, project, msg_count, first_ts, last_ts, cost FROM sessions'
+  ).all();
+  return groupByProject(rows)
+    .map((g) => ({
+      project: g.project, name: g.name, cwd: g.cwd,
+      sessions: g.sessions, messages: g.messages,
+      last_ts: g.updated, cost: g.cost,
+    }))
+    .sort((a, b) => (b.last_ts || '').localeCompare(a.last_ts || ''));
 }
 
+/**
+ * List sessions, optionally filtered to one canonical project.
+ *
+ * The `project` argument is a canonical project key (as returned by
+ * {@link projects}); matching folds a repo's git worktrees into the parent
+ * repo. Command-tag noise is stripped from each summary.
+ *
+ * @param {string} [project] - Canonical project key, or falsy for all sessions.
+ * @returns {object[]} Session rows, most-recent first.
+ */
 export function sessions(project) {
   const d = getDb();
-  const where = project ? 'WHERE project = ?' : '';
-  const stmt = d.prepare(`
-    SELECT id, sessionId, project, cwd, git_branch, first_ts, last_ts,
+  const rows = d.prepare(`
+    SELECT id, id AS sessionId, project, cwd, git_branch, first_ts, last_ts,
            msg_count, user_count, asst_count, models, summary,
            in_tok, out_tok, cache_read, cache_create, cost
-    FROM (SELECT *, id AS sessionId FROM sessions) ${where}
+    FROM sessions
     ORDER BY last_ts DESC
-  `);
-  const rows = project ? stmt.all(project) : stmt.all();
-  return rows.map((r) => ({ ...r, summary: stripCmdTags(r.summary) }));
+  `).all();
+  const filtered = project
+    ? rows.filter((r) => canonicalProject(r.cwd, r.project).key === project)
+    : rows;
+  return filtered.map((r) => ({ ...r, summary: stripCmdTags(r.summary) }));
 }
 
 /** Full transcript read fresh from the source file. */
@@ -289,17 +364,23 @@ export function search(q, project, limit = 100) {
   reindex();
   // sanitize for FTS5: quote each term to avoid syntax errors
   const match = q.trim().split(/\s+/).map((t) => `"${t.replace(/"/g, '')}"`).join(' ');
-  const projClause = project ? 'AND f.project = ?' : '';
+  // When filtering by a canonical project we post-filter in JS (worktrees fold
+  // into their parent), so the SQL LIMIT is dropped and applied after filtering.
   const sql = `
     SELECT f.session_id AS id, f.project, f.ts, f.role,
            snippet(msg_fts, 4, '[', ']', ' … ', 12) AS snippet,
            s.summary, s.cwd
     FROM msg_fts f JOIN sessions s ON s.id = f.session_id
-    WHERE msg_fts MATCH ? ${projClause}
-    ORDER BY f.ts DESC LIMIT ?`;
-  const args = project ? [match, project, limit] : [match, limit];
+    WHERE msg_fts MATCH ?
+    ORDER BY f.ts DESC ${project ? '' : 'LIMIT ?'}`;
   try {
-    return d.prepare(sql).all(...args).map((r) => ({ ...r, name: basename(r.cwd || r.project), summary: stripCmdTags(r.summary) }));
+    let rows = project ? d.prepare(sql).all(match) : d.prepare(sql).all(match, limit);
+    if (project) {
+      rows = rows
+        .filter((r) => canonicalProject(r.cwd, r.project).key === project)
+        .slice(0, limit);
+    }
+    return rows.map((r) => ({ ...r, name: basename(r.cwd || r.project), summary: stripCmdTags(r.summary) }));
   } catch {
     return [];
   }
@@ -308,8 +389,9 @@ export function search(q, project, limit = 100) {
 /**
  * Aggregate usage stats across all indexed sessions.
  *
- * Reindexes first, then returns totals plus breakdowns by project, by model,
- * and by day (all days with activity). `byProject` and `byDay` rows each include
+ * Reindexes first, then returns totals plus breakdowns by project (canonical —
+ * git worktrees fold into their parent repo, see {@link canonicalProject}), by
+ * model, and by day (all days with activity). `byProject` and `byDay` rows each include
  * summed `tokens` (in + out + cache read/write), `messages`, `sessions`, and
  * `cost`; `byProject` rows also carry `created` (earliest `first_ts`) and
  * `updated` (latest `last_ts`) ISO timestamps for sorting.
@@ -323,14 +405,12 @@ export function stats() {
     SELECT COUNT(*) AS sessions, SUM(msg_count) AS messages,
            SUM(in_tok+out_tok+cache_read+cache_create) AS tokens, SUM(cost) AS cost
     FROM sessions`).get();
-  const byProject = d.prepare(`
-    SELECT project, MAX(cwd) AS cwd, COUNT(*) AS sessions,
-           SUM(msg_count) AS messages,
-           SUM(in_tok+out_tok+cache_read+cache_create) AS tokens,
-           SUM(cost) AS cost,
-           MIN(first_ts) AS created, MAX(last_ts) AS updated
-    FROM sessions GROUP BY project ORDER BY cost DESC`).all()
-    .map((r) => ({ ...r, name: basename(r.cwd || r.project) }));
+  const byProject = groupByProject(d.prepare(`
+    SELECT cwd, project, msg_count,
+           in_tok+out_tok+cache_read+cache_create AS tokens,
+           cost, first_ts, last_ts
+    FROM sessions`).all())
+    .sort((a, b) => b.cost - a.cost);
   const byModel = d.prepare(`
     SELECT models, COUNT(*) AS sessions, SUM(out_tok) AS out_tok, SUM(cost) AS cost
     FROM sessions WHERE models <> '' GROUP BY models ORDER BY cost DESC`).all();
