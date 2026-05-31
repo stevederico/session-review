@@ -271,6 +271,7 @@ export function session(id) {
   const d = getDb();
   const meta = d.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
   if (!meta) return null;
+  meta.summary = stripCmdTags(meta.summary);
   let records = [];
   try {
     records = readFileSync(meta.file, 'utf8')
