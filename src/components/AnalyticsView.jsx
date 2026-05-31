@@ -33,8 +33,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@stevederico/skateboard-ui/shadcn/ui/select';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@stevederico/skateboard-ui/shadcn/ui/tooltip';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import { formatCost, formatTokens, formatDate, relativeTime, shortModel } from '../lib/format.js';
+import {
+  formatCost,
+  formatTokens,
+  formatDate,
+  formatDayShort,
+  relativeTime,
+  shortModel,
+} from '../lib/format.js';
 
 /**
  * Sort options for the projects list. Each defines how to read its numeric
@@ -83,7 +95,8 @@ const COST_DISCLAIMER = 'Costs are estimates based on public per-model pricing.'
  * Analytics dashboard for Claude Code usage and cost.
  *
  * Fetches `/cc/stats` on mount and renders summary stat cards (including
- * average tokens/day), a tokens-per-day bar chart, a by-model table,
+ * average tokens/day), a tokens-per-day bar chart with per-bar date labels and
+ * a hover/focus tooltip showing the day and its token count, a by-model table,
  * and a projects breakdown sortable by cost, tokens, messages, sessions, or
  * created/updated date. Handles loading, error, and empty states.
  *
@@ -219,24 +232,44 @@ export default function AnalyticsView() {
         {dailyAscending.length === 0 ? (
           <p className="text-sm text-muted-foreground">No recent activity.</p>
         ) : (
-          <div
-            className="flex h-32 items-end gap-0.5"
-            role="img"
-            aria-label="Token usage per day"
-          >
-            {dailyAscending.map((day) => (
-              <div
-                key={day.day}
-                title={`${day.day}: ${formatTokens(day.tokens)} tokens · ${Number(day.messages).toLocaleString()} msgs · ${formatCost(day.cost)}`}
-                className={cn(
-                  'flex-1 rounded-t bg-primary transition-opacity hover:opacity-80',
-                  (Number(day.tokens) || 0) === 0 && 'opacity-20',
-                )}
-                style={{
-                  height: `${maxDailyTokens ? Math.max(((Number(day.tokens) || 0) / maxDailyTokens) * 100, 2) : 0}%`,
-                }}
-              />
-            ))}
+          <div role="group" aria-label="Token usage per day">
+            <div className="flex h-32 items-end gap-0.5">
+              {dailyAscending.map((day) => (
+                <Tooltip key={day.day}>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        aria-label={`${formatDate(day.day)}: ${formatTokens(day.tokens)} tokens`}
+                        className={cn(
+                          'flex-1 cursor-pointer rounded-t bg-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          (Number(day.tokens) || 0) === 0 && 'opacity-20',
+                        )}
+                        style={{
+                          height: `${maxDailyTokens ? Math.max(((Number(day.tokens) || 0) / maxDailyTokens) * 100, 2) : 0}%`,
+                        }}
+                      />
+                    }
+                  />
+                  <TooltipContent>
+                    <span className="font-medium">{formatDate(day.day)}</span>
+                    {' · '}
+                    {formatTokens(day.tokens)} tokens
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+            {/* X-axis: one M/D label per bar, rotated vertical so it fits any column width. */}
+            <div className="mt-1.5 flex gap-0.5" aria-hidden="true">
+              {dailyAscending.map((day) => (
+                <span
+                  key={day.day}
+                  className="flex-1 text-center text-label-sm leading-none tabular-nums text-muted-foreground [writing-mode:vertical-rl]"
+                >
+                  {formatDayShort(day.day)}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
