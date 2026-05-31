@@ -1,0 +1,8 @@
+{
+  "staticDir": "../dist",
+  "database": {
+    "db": "CcReview",
+    "dbType": "sqlite",
+    "connectionString": "./databases/CcReview.db"
+  }
+}

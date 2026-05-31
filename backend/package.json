@@ -1,0 +1,18 @@
+{
+    "name": "skateboard-backend",
+    "private": true,
+    "description": "Skateboard application backend",
+    "type": "module",
+    "engines": {
+        "node": ">=22.5.0"
+    },
+    "scripts": {
+        "start": "node --experimental-sqlite server.js",
+        "test": "node --test --experimental-sqlite server.test.js"
+    },
+    "dependencies": {
+        "@hono/node-server": "^1.14.1",
+        "hono": "^4.7.11",
+        "stripe": "^18.5.0"
+    }
+}
