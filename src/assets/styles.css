@@ -7,6 +7,37 @@
 }
 
 
+/*
+ * Shell scroll model.
+ *
+ * The skateboard shell sizes its frame with min-height (min-h-screen on the
+ * Layout root, min-h-svh on the sidebar wrapper), so percentage/flex heights
+ * inside never resolve — the whole document scrolls as one block instead of
+ * each view scrolling its own content (e.g. in Browse the session list would
+ * scroll away with the transcript). Pin the frame to the viewport and zero the
+ * minimums so a view's own `flex-1 + overflow-y-auto` region is what scrolls,
+ * while the header/sidebar/list stay put. Dropdowns, sheets, and tooltips
+ * render through portals to <body>, so `overflow: hidden` here can't clip them.
+ */
+[data-slot="sidebar-wrapper"] {
+  height: 100svh;
+  min-height: 0;
+}
+
+[data-slot="sidebar-inset"] {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Mobile: the frame fills the viewport but the bottom tab bar overlays it, so
+   reserve its height (matches the shell's own 5rem reservation) below md. */
+@media (max-width: 767px) {
+  [data-slot="sidebar-inset"] {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
+
 [data-sidebar="footer"] [data-sidebar="menu-button"] > div {
   flex: 0 1 auto !important;
 }

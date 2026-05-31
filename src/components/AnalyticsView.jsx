@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  MessagesSquare,
-  MessageCircle,
-  Coins,
-  DollarSign,
-  CircleAlert,
-  BarChart3,
-} from '@stevederico/skateboard-ui/icons';
+import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
+import MessageCircle from '@stevederico/skateboard-ui/icons/MessageCircle';
+import Coins from '@stevederico/skateboard-ui/icons/Coins';
+import DollarSign from '@stevederico/skateboard-ui/icons/DollarSign';
+import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
+import BarChart3 from '@stevederico/skateboard-ui/icons/ChartColumn';
 import Header from '@stevederico/skateboard-ui/Header';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
@@ -136,7 +134,7 @@ export default function AnalyticsView() {
   return (
     <>
       <Header title="Analytics" />
-      <div className="p-4 lg:p-6">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {statCards.map(({ label, value, Icon }) => (
             <Card key={label}>

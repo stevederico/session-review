@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, CircleAlert } from '@stevederico/skateboard-ui/icons';
+import Search from '@stevederico/skateboard-ui/icons/Search';
+import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import { apiRequest, apiRequestWithParams } from '@stevederico/skateboard-ui/Utilities';
 import Header from '@stevederico/skateboard-ui/Header';
 import { Input } from '@stevederico/skateboard-ui/shadcn/ui/input';
@@ -235,7 +236,7 @@ export default function SearchView() {
     <>
       <Header title="Search" />
 
-      <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search

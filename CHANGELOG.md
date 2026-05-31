@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+  Pin shell viewport
+  Independent pane scroll
+  Deep icon imports
+
 ## 0.2.0
   Standalone markdown renderer
   Multibacktick code spans

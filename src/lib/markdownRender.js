@@ -11,7 +11,10 @@
  */
 
 import { createElement as h, useMemo } from 'react';
-import { Square, SquareCheck, Copy, Check } from '@stevederico/skateboard-ui/icons';
+import Square from '@stevederico/skateboard-ui/icons/Square';
+import SquareCheck from '@stevederico/skateboard-ui/icons/SquareCheck';
+import Copy from '@stevederico/skateboard-ui/icons/Copy';
+import Check from '@stevederico/skateboard-ui/icons/Check';
 import { parseMarkdown, parseInline } from './markdown.js';
 import { useCopy } from './useCopy.js';
 
@@ -261,6 +264,9 @@ export default function Markdown({ children, className }) {
   return h(
     'div',
     { className },
-    tokens.map((token, idx) => renderBlock(token, idx)),
+    tokens.map((token, idx) => {
+      const key = `${token.type}:${idx}:${(token.code ?? token.text ?? token.level ?? '').toString().slice(0, 24)}`;
+      return renderBlock(token, key);
+    }),
   );
 }

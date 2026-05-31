@@ -19,7 +19,10 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import { RefreshCw, MessagesSquare, FolderOpen, CircleAlert } from '@stevederico/skateboard-ui/icons';
+import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
+import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
+import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
+import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import { formatCost, relativeTime, shortModel } from '../lib/format.js';
 import Transcript from './Transcript.jsx';
 

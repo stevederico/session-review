@@ -1,20 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useDeferredValue } from 'react';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import {
-  Sparkles,
-  Brain,
-  Wrench,
-  Terminal,
-  FileText,
-  FilePen,
-  Search,
-  Bot,
-  Globe,
-  ChevronRight,
-  Check,
-  Copy,
-  X,
-} from '@stevederico/skateboard-ui/icons';
+import Sparkles from '@stevederico/skateboard-ui/icons/Sparkles';
+import Brain from '@stevederico/skateboard-ui/icons/Brain';
+import Wrench from '@stevederico/skateboard-ui/icons/Wrench';
+import Terminal from '@stevederico/skateboard-ui/icons/Terminal';
+import FileText from '@stevederico/skateboard-ui/icons/FileText';
+import FilePen from '@stevederico/skateboard-ui/icons/FilePen';
+import Search from '@stevederico/skateboard-ui/icons/Search';
+import Bot from '@stevederico/skateboard-ui/icons/Bot';
+import Globe from '@stevederico/skateboard-ui/icons/Globe';
+import ChevronRight from '@stevederico/skateboard-ui/icons/ChevronRight';
+import Check from '@stevederico/skateboard-ui/icons/Check';
+import Copy from '@stevederico/skateboard-ui/icons/Copy';
+import X from '@stevederico/skateboard-ui/icons/X';
 import Markdown from '../lib/markdownRender.js';
 import { formatDate, shortModel, formatTokens } from '../lib/format.js';
 import { useCopy } from '../lib/useCopy.js';
@@ -216,14 +214,14 @@ function deriveMessages(records) {
 /** Centered, muted system notice. */
 function MessageSystem({ text }) {
   return (
-    <div className="px-4 text-center text-copy-sm italic text-muted-foreground">{text}</div>
+    <div className="px-4 text-center text-copy-sm italic text-muted-foreground [content-visibility:auto] [contain-intrinsic-size:auto_32px]">{text}</div>
   );
 }
 
 /** Right-aligned user prompt bubble with a timestamp beneath it. */
 function MessageUser({ text, timestamp }) {
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
       <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 leading-relaxed text-foreground sm:max-w-[36rem]">
         <Markdown className="break-words">{text}</Markdown>
       </div>
@@ -378,7 +376,7 @@ function MessageAssistant({ message }) {
     .join('\n\n');
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
       <div className="flex items-center gap-2">
         <Sparkles size={ICON_SIZE} aria-hidden="true" className="text-app" />
         <span className="text-label-sm text-foreground">Claude</span>
@@ -429,11 +427,14 @@ export default function Transcript({ records, meta }) {
     () => (Array.isArray(records) ? deriveMessages(records) : []),
     [records],
   );
-  if (messages.length === 0) return null;
+  // Defer the (potentially huge) message list so urgent updates (search typing,
+  // scroll) stay responsive while the heavy transcript re-renders in the background.
+  const deferredMessages = useDeferredValue(messages);
+  if (deferredMessages.length === 0) return null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-4 selection:bg-app/20">
-      {messages.map((message, i) => {
+      {deferredMessages.map((message, i) => {
         if (message.role === 'system') return <MessageSystem key={i} text={message.text} />;
         if (message.role === 'user')
           return <MessageUser key={i} text={message.text} timestamp={message.timestamp} />;
