@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0
+
+  Fix analytics sort label
+
 ## 0.6.0
 
   Add tokens-per-day chart
