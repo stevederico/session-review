@@ -23,11 +23,29 @@ import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
-import { formatCost, relativeTime, shortModel, folderName } from '../lib/format.js';
+import { formatCost, formatTokens, relativeTime, shortModel, folderName } from '../lib/format.js';
 import Transcript from './Transcript.jsx';
 
 /** Sentinel value for the "All projects" Select option (no project filter). */
 const ALL_PROJECTS = '__all__';
+
+/** Total tokens for a session: input + output + cache read + cache create. */
+const tokensOf = (s) =>
+  (Number(s.in_tok) || 0) + (Number(s.out_tok) || 0) +
+  (Number(s.cache_read) || 0) + (Number(s.cache_create) || 0);
+
+/**
+ * Sort options for the session list. Each defines how to read its numeric sort
+ * key (`get`); all sort descending. Mirrors the analytics project sorts, minus
+ * "Sessions" (each row is a single session).
+ */
+const SESSION_SORTS = [
+  { value: 'recent', label: 'Last updated', get: (s) => Date.parse(s.last_ts) || 0 },
+  { value: 'created', label: 'Date created', get: (s) => Date.parse(s.first_ts) || 0 },
+  { value: 'cost', label: 'Cost', get: (s) => Number(s.cost) || 0 },
+  { value: 'tokens', label: 'Tokens', get: (s) => tokensOf(s) },
+  { value: 'messages', label: 'Messages', get: (s) => Number(s.msg_count) || 0 },
+];
 
 /** Render a centered loading Spinner that fills its parent. */
 function LoadingState() {
@@ -77,6 +95,8 @@ function SessionMeta({ session }) {
       <span>{relativeTime(session.last_ts)}</span>
       <span aria-hidden="true">·</span>
       <span>{session.msg_count} msgs</span>
+      <span aria-hidden="true">·</span>
+      <span>{formatTokens(tokensOf(session))} tok</span>
       {models ? (
         <>
           <span aria-hidden="true">·</span>
@@ -110,6 +130,7 @@ export default function BrowseView() {
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsError, setSessionsError] = useState('');
+  const [sessionSort, setSessionSort] = useState('recent');
 
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [detail, setDetail] = useState(null);
@@ -225,6 +246,12 @@ export default function BrowseView() {
     .map((m) => shortModel(m.trim()))
     .filter(Boolean);
 
+  // Sort the loaded session list client-side (descending) by the active key.
+  const activeSessionSort = SESSION_SORTS.find((s) => s.value === sessionSort) ?? SESSION_SORTS[0];
+  const sortedSessions = [...sessions].sort(
+    (a, b) => activeSessionSort.get(b) - activeSessionSort.get(a),
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <Header title="Browse">
@@ -249,7 +276,7 @@ export default function BrowseView() {
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* LEFT PANE: project picker + session list */}
         <aside className="flex min-h-0 shrink-0 flex-col border-b border-border md:w-80 md:border-b-0 md:border-r">
-          <div className="shrink-0 p-3">
+          <div className="flex shrink-0 flex-col gap-2 p-3">
             <Select
               value={selectedProject}
               onValueChange={handleSelectProject}
@@ -270,6 +297,21 @@ export default function BrowseView() {
                 {projects.map((p) => (
                   <SelectItem key={p.project} value={p.project}>
                     {p.name} ({p.sessions})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sessionSort} onValueChange={setSessionSort}>
+              <SelectTrigger className="w-full" aria-label="Sort conversations by" size="sm">
+                <SelectValue placeholder="Sort by">
+                  {(value) => `Sort: ${SESSION_SORTS.find((s) => s.value === value)?.label ?? value}`}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {SESSION_SORTS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -301,7 +343,7 @@ export default function BrowseView() {
 
             {!projectsLoading && !projectsError && !sessionsLoading && !sessionsError && sessions.length > 0 ? (
               <ul className="flex flex-col gap-1">
-                {sessions.map((session) => {
+                {sortedSessions.map((session) => {
                   const isSelected = session.id === selectedSessionId;
                   return (
                     <li key={session.id}>
