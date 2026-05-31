@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+
+  Add token chart tooltips
+  Add daily date labels
+
 ## 0.7.0
 
   Fix analytics sort label

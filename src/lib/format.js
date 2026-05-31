@@ -31,6 +31,20 @@ export function formatDate(iso) {
   });
 }
 
+/**
+ * Compact month/day label for a `YYYY-MM-DD` day key, e.g. `5/31`.
+ * Parses the date parts directly so the label never shifts across timezones.
+ *
+ * @param {string} day - A day key in `YYYY-MM-DD` form.
+ * @returns {string} The `M/D` label, or `''` if the input is unparseable.
+ */
+export function formatDayShort(day) {
+  if (!day) return '';
+  const [, month, date] = day.split('-').map(Number);
+  if (!month || !date) return '';
+  return `${month}/${date}`;
+}
+
 /** Compact relative age, e.g. `3d`, `5h`, `now`. */
 export function relativeTime(iso) {
   if (!iso) return '';
