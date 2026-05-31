@@ -1,6 +1,34 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMarkdown, parseInline } from './markdown.js';
+import { parseMarkdown, parseInline, stripCommandTags } from './markdown.js';
+
+test('stripCommandTags removes paired command meta tags with their content', () => {
+  const input =
+    '<command-message>foo is running</command-message>\n<command-name>/foo</command-name>\n<command-args>bar</command-args>\nactual content';
+  assert.equal(stripCommandTags(input), 'actual content');
+});
+
+test('stripCommandTags removes local-command-caveat blocks', () => {
+  assert.equal(
+    stripCommandTags('before\n<local-command-caveat>caveat</local-command-caveat>\nafter'),
+    'before\n\nafter',
+  );
+});
+
+test('stripCommandTags strips unpaired/leftover command tags', () => {
+  assert.equal(stripCommandTags('hi <command-name> there'), 'hi  there');
+});
+
+test('stripCommandTags leaves ordinary text untouched', () => {
+  assert.equal(stripCommandTags('just normal text'), 'just normal text');
+});
+
+test('parseMarkdown drops command meta tags before parsing', () => {
+  const tokens = parseMarkdown('<command-name>/x</command-name>\nhello');
+  assert.equal(tokens.length, 1);
+  assert.equal(tokens[0].type, 'paragraph');
+  assert.equal(tokens[0].text, 'hello');
+});
 
 test('fenced code block captures language and code', () => {
   const [token] = parseMarkdown('```js\nconst a = 1;\n```');
