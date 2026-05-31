@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractText, priceFor, costOf, canonicalProject } from './cc-index.js';
+import { extractText, priceFor, costOf, canonicalProject, isConversational } from './cc-index.js';
 
 test('extractText returns a plain string message body', () => {
   assert.equal(extractText({ message: { role: 'user', content: 'hello' } }), 'hello');
@@ -77,4 +77,36 @@ test('canonicalProject prefers cwd over the encoded project fallback', () => {
 
 test('canonicalProject strips a trailing slash', () => {
   assert.equal(canonicalProject('/Users/dev/projects/demo-app/').name, 'onyx');
+});
+
+test('isConversational counts a typed user prompt (string content)', () => {
+  assert.equal(isConversational({ type: 'user', message: { content: 'hello there' } }), true);
+});
+
+test('isConversational counts an assistant text reply', () => {
+  assert.equal(
+    isConversational({ type: 'assistant', message: { content: [{ type: 'text', text: 'sure' }] } }),
+    true
+  );
+});
+
+test('isConversational rejects a tool_result (user-role plumbing)', () => {
+  assert.equal(
+    isConversational({ type: 'user', message: { content: [{ type: 'tool_result', content: 'ok' }] } }),
+    false
+  );
+});
+
+test('isConversational rejects a tool_use-only assistant record', () => {
+  assert.equal(
+    isConversational({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: {} }] } }),
+    false
+  );
+});
+
+test('isConversational rejects an empty text block', () => {
+  assert.equal(
+    isConversational({ type: 'assistant', message: { content: [{ type: 'text', text: '   ' }] } }),
+    false
+  );
 });

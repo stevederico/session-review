@@ -164,6 +164,30 @@ export function extractText(rec) {
   return '';
 }
 
+/**
+ * True if a transcript record is a real conversational message — a typed user
+ * prompt or an assistant reply that contains prose.
+ *
+ * Claude Code writes a separate record for every tool call (assistant
+ * `tool_use`) and every tool result (a `user`-role `tool_result`), so a single
+ * exchange spans many records. Those are plumbing, not messages; this gate
+ * keeps the count to records that carry actual text.
+ *
+ * @param {object} rec - A parsed transcript record.
+ * @returns {boolean}
+ */
+export function isConversational(rec) {
+  const msg = rec?.message;
+  const content = msg && typeof msg === 'object' ? msg.content : rec?.content;
+  if (typeof content === 'string') return content.trim().length > 0;
+  if (Array.isArray(content)) {
+    return content.some(
+      (b) => b && typeof b === 'object' && b.type === 'text' && (b.text || '').trim().length > 0
+    );
+  }
+  return false;
+}
+
 /** Parse one JSONL file into a session row + per-message fts rows. */
 function parseFile(file) {
   const path = join(PROJECTS_DIR, file.project, file.name);
@@ -182,6 +206,12 @@ function parseFile(file) {
   };
   const fts = [];
   let firstUserText = '';
+  // Claude Code splits one API response (one message.id) across several records
+  // — a text block, then one per tool_use — and repeats the SAME usage on every
+  // split. Dedupe by message.id so tokens/cost and the assistant turn count
+  // aren't multiplied ~7-9x by that fan-out.
+  const seenUsage = new Set();
+  const seenAsstMsg = new Set();
 
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -198,20 +228,36 @@ function parseFile(file) {
 
     if (t === 'summary' && rec.summary) { row.summary = rec.summary; continue; }
     if (t !== 'user' && t !== 'assistant') continue;
-    if (rec.isSidechain) { /* still index, but mark via role */ }
-
-    row.msg_count++;
     const role = t;
-    if (t === 'user') row.user_count++;
+    const msgId = rec.message?.id;
+
+    // Token/model usage: accumulate once per API response (message.id). Usage is
+    // identical on every split record, so summing per-record overcounts heavily.
     if (t === 'assistant') {
-      row.asst_count++;
       const msg = rec.message || {};
       if (msg.model) row.models.add(msg.model);
-      const u = msg.usage || {};
-      row.in_tok += u.input_tokens || 0;
-      row.out_tok += u.output_tokens || 0;
-      row.cache_read += u.cache_read_input_tokens || 0;
-      row.cache_create += u.cache_creation_input_tokens || 0;
+      if (!msgId || !seenUsage.has(msgId)) {
+        if (msgId) seenUsage.add(msgId);
+        const u = msg.usage || {};
+        row.in_tok += u.input_tokens || 0;
+        row.out_tok += u.output_tokens || 0;
+        row.cache_read += u.cache_read_input_tokens || 0;
+        row.cache_create += u.cache_creation_input_tokens || 0;
+      }
+    }
+
+    // Count real conversational turns only (tool calls/results are plumbing).
+    // Assistant responses are also split across records, so count once per
+    // message.id.
+    if (isConversational(rec)) {
+      if (t === 'user') {
+        row.msg_count++;
+        row.user_count++;
+      } else if (!msgId || !seenAsstMsg.has(msgId)) {
+        if (msgId) seenAsstMsg.add(msgId);
+        row.msg_count++;
+        row.asst_count++;
+      }
     }
 
     const body = extractText(rec).slice(0, 20000);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+  Dedupe per-response tokens
+  Fix message overcount
+  Sort browse sessions
+
 ## 0.8.0
 
   Add token chart tooltips
