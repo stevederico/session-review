@@ -142,8 +142,9 @@ function deriveMessages(records) {
       const content = record?.message?.content;
 
       if (typeof content === 'string') {
-        if (content.trim()) {
-          messages.push({ role: 'user', text: content, timestamp: record?.timestamp });
+        const text = stripCommandTags(content);
+        if (text.trim()) {
+          messages.push({ role: 'user', text, timestamp: record?.timestamp });
         }
         continue;
       }
@@ -188,10 +189,11 @@ function deriveMessages(records) {
         }
       }
 
-      if (userTextParts.length) {
+      const userText = stripCommandTags(userTextParts.join('\n\n'));
+      if (userText.trim()) {
         messages.push({
           role: 'user',
-          text: stripCommandTags(userTextParts.join('\n\n')),
+          text: userText,
           timestamp: record?.timestamp,
         });
       }
