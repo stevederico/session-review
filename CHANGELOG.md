@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0
+
+  Redesign session cards
+  Corner-align card meta
+  Remove transcript title
+
 ## 0.9.0
 
   Dedupe per-response tokens
