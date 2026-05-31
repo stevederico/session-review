@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+  Prefix folder name
+  Suppress command tags
+
 ## 0.3.0
   Pin shell viewport
   Independent pane scroll
