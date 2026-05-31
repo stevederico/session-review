@@ -77,17 +77,44 @@ export function canonicalProject(cwd, project = '') {
 }
 
 /**
- * Group session rows by canonical project, summing usage metrics.
+ * Resolve a session's effective project, honoring manual overrides.
  *
- * @param {object[]} rows - Rows carrying `cwd`, `project`, and any of
+ * A session run from a folder with no repo (e.g. `~/Desktop/projects`) can be
+ * hand-filed to a real project; that assignment wins over the cwd-derived
+ * {@link canonicalProject}.
+ *
+ * @param {{id: string, cwd?: string, project?: string}} row - Session row.
+ * @param {Map<string,string>} [overrides] - id → target canonical key.
+ * @returns {{key: string, name: string}}
+ */
+export function resolveProject(row, overrides) {
+  const ov = overrides?.get(row.id);
+  if (ov) return { key: ov, name: basename(ov) || ov };
+  return canonicalProject(row.cwd, row.project);
+}
+
+/** Load all manual session→project assignments as an id → key Map. */
+function loadOverrides(d) {
+  const map = new Map();
+  for (const r of d.prepare('SELECT id, project_key FROM session_overrides').all()) {
+    map.set(r.id, r.project_key);
+  }
+  return map;
+}
+
+/**
+ * Group session rows by resolved project, summing usage metrics.
+ *
+ * @param {object[]} rows - Rows carrying `id`, `cwd`, `project`, and any of
  *   `msg_count`, `tokens`, `cost`, `first_ts`, `last_ts`.
+ * @param {Map<string,string>} [overrides] - Manual id → project-key map.
  * @returns {object[]} One aggregate per project: `{project, name, cwd,
  *   sessions, messages, tokens, cost, created, updated}` (unsorted).
  */
-function groupByProject(rows) {
+function groupByProject(rows, overrides) {
   const groups = new Map();
   for (const r of rows) {
-    const { key, name } = canonicalProject(r.cwd, r.project);
+    const { key, name } = resolveProject(r, overrides);
     let g = groups.get(key);
     if (!g) {
       g = { project: key, name, cwd: key, sessions: 0, messages: 0,
@@ -134,6 +161,12 @@ function getDb() {
     CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project);
     CREATE VIRTUAL TABLE IF NOT EXISTS msg_fts USING fts5(
       session_id UNINDEXED, ts UNINDEXED, role UNINDEXED, project UNINDEXED, body
+    );
+    -- Manual session→project assignments. Survive reindex (separate table) and
+    -- are applied at query time, overriding the cwd-derived canonical project.
+    CREATE TABLE IF NOT EXISTS session_overrides (
+      id TEXT PRIMARY KEY,
+      project_key TEXT NOT NULL
     );
   `);
   return db;
@@ -345,21 +378,50 @@ export function reindex(force = false) {
  * most-recently-active first.
  *
  * @returns {{project: string, name: string, cwd: string, sessions: number,
- *   messages: number, last_ts: string, cost: number}[]}
+ *   messages: number, tokens: number, last_ts: string, created: string,
+ *   cost: number}[]}
  */
 export function projects() {
   const d = getDb();
   reindex();
+  const overrides = loadOverrides(d);
   const rows = d.prepare(
-    'SELECT cwd, project, msg_count, first_ts, last_ts, cost FROM sessions'
+    `SELECT id, cwd, project, msg_count,
+            in_tok+out_tok+cache_read+cache_create AS tokens,
+            first_ts, last_ts, cost
+     FROM sessions`
   ).all();
-  return groupByProject(rows)
+  return groupByProject(rows, overrides)
     .map((g) => ({
       project: g.project, name: g.name, cwd: g.cwd,
-      sessions: g.sessions, messages: g.messages,
-      last_ts: g.updated, cost: g.cost,
+      sessions: g.sessions, messages: g.messages, tokens: g.tokens,
+      last_ts: g.updated, created: g.created, cost: g.cost,
     }))
     .sort((a, b) => (b.last_ts || '').localeCompare(a.last_ts || ''));
+}
+
+/**
+ * Manually assign a session to a project, or clear the assignment.
+ *
+ * @param {string} id - Session id.
+ * @param {?string} projectKey - Target canonical project key; null/empty clears.
+ * @returns {{id: string, project_key: string|null}}
+ */
+export function setOverride(id, projectKey) {
+  const d = getDb();
+  if (!projectKey) {
+    d.prepare('DELETE FROM session_overrides WHERE id = ?').run(id);
+    return { id, project_key: null };
+  }
+  d.prepare('INSERT OR REPLACE INTO session_overrides (id, project_key) VALUES (?, ?)')
+    .run(id, projectKey);
+  return { id, project_key: projectKey };
+}
+
+/** List all manual session→project assignments. */
+export function listOverrides() {
+  const d = getDb();
+  return d.prepare('SELECT id, project_key FROM session_overrides').all();
 }
 
 /**
@@ -381,8 +443,9 @@ export function sessions(project) {
     FROM sessions
     ORDER BY last_ts DESC
   `).all();
+  const overrides = loadOverrides(d);
   const filtered = project
-    ? rows.filter((r) => canonicalProject(r.cwd, r.project).key === project)
+    ? rows.filter((r) => resolveProject(r, overrides).key === project)
     : rows;
   return filtered.map((r) => ({ ...r, summary: stripCmdTags(r.summary) }));
 }
@@ -393,6 +456,13 @@ export function session(id) {
   const meta = d.prepare('SELECT * FROM sessions WHERE id = ?').get(id);
   if (!meta) return null;
   meta.summary = stripCmdTags(meta.summary);
+  // Surface the effective project + whether it was manually assigned, so the
+  // detail view can show and edit the assignment.
+  const overrides = loadOverrides(d);
+  const resolved = resolveProject(meta, overrides);
+  meta.project_key = resolved.key;
+  meta.project_name = resolved.name;
+  meta.overridden = overrides.has(meta.id);
   let records = [];
   try {
     records = readFileSync(meta.file, 'utf8')
@@ -422,8 +492,9 @@ export function search(q, project, limit = 100) {
   try {
     let rows = project ? d.prepare(sql).all(match) : d.prepare(sql).all(match, limit);
     if (project) {
+      const overrides = loadOverrides(d);
       rows = rows
-        .filter((r) => canonicalProject(r.cwd, r.project).key === project)
+        .filter((r) => resolveProject(r, overrides).key === project)
         .slice(0, limit);
     }
     return rows.map((r) => ({ ...r, name: basename(r.cwd || r.project), summary: stripCmdTags(r.summary) }));
@@ -452,10 +523,10 @@ export function stats() {
            SUM(in_tok+out_tok+cache_read+cache_create) AS tokens, SUM(cost) AS cost
     FROM sessions`).get();
   const byProject = groupByProject(d.prepare(`
-    SELECT cwd, project, msg_count,
+    SELECT id, cwd, project, msg_count,
            in_tok+out_tok+cache_read+cache_create AS tokens,
            cost, first_ts, last_ts
-    FROM sessions`).all())
+    FROM sessions`).all(), loadOverrides(d))
     .sort((a, b) => b.cost - a.cost);
   const byModel = d.prepare(`
     SELECT models, COUNT(*) AS sessions, SUM(out_tok) AS out_tok, SUM(cost) AS cost

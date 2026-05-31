@@ -1021,6 +1021,29 @@ app.post("/api/cc/reindex", (c) => {
   }
 });
 
+/** List manual session→project assignments. */
+app.get("/api/cc/overrides", (c) => {
+  try {
+    return c.json(cc.listOverrides());
+  } catch (err) {
+    logger.error("cc/overrides failed", { error: err.message });
+    return c.json({ error: "Failed to read overrides" }, 500);
+  }
+});
+
+/** Assign a session to a project (or clear): { id, project }. project null clears. */
+app.post("/api/cc/tag", async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = body?.id;
+    if (!id) return c.json({ error: "Missing session id" }, 400);
+    return c.json(cc.setOverride(id, body?.project ?? null));
+  } catch (err) {
+    logger.error("cc/tag failed", { error: err.message });
+    return c.json({ error: "Failed to assign session" }, 500);
+  }
+});
+
 /**
  * Parse JSON request body with proper error handling
  *
