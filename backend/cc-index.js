@@ -13,6 +13,20 @@ import { homedir } from 'node:os';
 import { join, basename } from 'node:path';
 
 const PROJECTS_DIR = join(homedir(), '.claude', 'projects');
+
+/**
+ * Strip Claude Code slash-command meta tags from a one-line session title.
+ * Mirrors the frontend stripCommandTags but collapses to a single line.
+ * @param {string} s
+ * @returns {string}
+ */
+function stripCmdTags(s) {
+  return String(s ?? '')
+    .replace(/<((?:local-)?command-[a-z-]+)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<\/?(?:local-)?command-[a-z-]+\b[^>]*>/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 const DB_DIR = join(import.meta.dirname, 'databases');
 const DB_PATH = join(DB_DIR, 'ccindex.db');
 
@@ -248,7 +262,8 @@ export function sessions(project) {
     FROM (SELECT *, id AS sessionId FROM sessions) ${where}
     ORDER BY last_ts DESC
   `);
-  return project ? stmt.all(project) : stmt.all();
+  const rows = project ? stmt.all(project) : stmt.all();
+  return rows.map((r) => ({ ...r, summary: stripCmdTags(r.summary) }));
 }
 
 /** Full transcript read fresh from the source file. */
@@ -283,12 +298,23 @@ export function search(q, project, limit = 100) {
     ORDER BY f.ts DESC LIMIT ?`;
   const args = project ? [match, project, limit] : [match, limit];
   try {
-    return d.prepare(sql).all(...args).map((r) => ({ ...r, name: basename(r.cwd || r.project) }));
+    return d.prepare(sql).all(...args).map((r) => ({ ...r, name: basename(r.cwd || r.project), summary: stripCmdTags(r.summary) }));
   } catch {
     return [];
   }
 }
 
+/**
+ * Aggregate usage stats across all indexed sessions.
+ *
+ * Reindexes first, then returns totals plus breakdowns by project, by model,
+ * and by day (all days with activity). `byProject` and `byDay` rows each include
+ * summed `tokens` (in + out + cache read/write), `messages`, `sessions`, and
+ * `cost`; `byProject` rows also carry `created` (earliest `first_ts`) and
+ * `updated` (latest `last_ts`) ISO timestamps for sorting.
+ *
+ * @returns {{totals: object, byProject: object[], byModel: object[], byDay: object[]}}
+ */
 export function stats() {
   const d = getDb();
   reindex();
@@ -298,15 +324,20 @@ export function stats() {
     FROM sessions`).get();
   const byProject = d.prepare(`
     SELECT project, MAX(cwd) AS cwd, COUNT(*) AS sessions,
-           SUM(msg_count) AS messages, SUM(cost) AS cost
-    FROM sessions GROUP BY project ORDER BY cost DESC LIMIT 20`).all()
+           SUM(msg_count) AS messages,
+           SUM(in_tok+out_tok+cache_read+cache_create) AS tokens,
+           SUM(cost) AS cost,
+           MIN(first_ts) AS created, MAX(last_ts) AS updated
+    FROM sessions GROUP BY project ORDER BY cost DESC`).all()
     .map((r) => ({ ...r, name: basename(r.cwd || r.project) }));
   const byModel = d.prepare(`
     SELECT models, COUNT(*) AS sessions, SUM(out_tok) AS out_tok, SUM(cost) AS cost
     FROM sessions WHERE models <> '' GROUP BY models ORDER BY cost DESC`).all();
   const byDay = d.prepare(`
     SELECT substr(last_ts,1,10) AS day, COUNT(*) AS sessions,
-           SUM(msg_count) AS messages, SUM(cost) AS cost
-    FROM sessions WHERE last_ts <> '' GROUP BY day ORDER BY day DESC LIMIT 60`).all();
+           SUM(msg_count) AS messages,
+           SUM(in_tok+out_tok+cache_read+cache_create) AS tokens,
+           SUM(cost) AS cost
+    FROM sessions WHERE last_ts <> '' GROUP BY day ORDER BY day DESC`).all();
   return { totals, byProject, byModel, byDay };
 }
