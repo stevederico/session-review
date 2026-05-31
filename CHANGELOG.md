@@ -1,10 +1,9 @@
 # Changelog
 
-## 0.12.0
+## 0.13.0
 
-  Archive transcript snapshots
-  Read archive first
-  Keep purged sessions
+  Remove transcript archive
+  Rely on cleanupPeriodDays
 
 ## 0.11.0
 

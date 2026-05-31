@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractText, priceFor, costOf, canonicalProject, isConversational, resolveProject, archivePathFor } from './cc-index.js';
+import { extractText, priceFor, costOf, canonicalProject, isConversational, resolveProject } from './cc-index.js';
 
 test('extractText returns a plain string message body', () => {
   assert.equal(extractText({ message: { role: 'user', content: 'hello' } }), 'hello');
@@ -131,13 +131,4 @@ test('resolveProject works without an overrides map', () => {
     resolveProject({ id: 'x', cwd: '/Users/dev/projects/demo-app' }).name,
     'onyx'
   );
-});
-
-test('archivePathFor mirrors project/id under the archive dir', () => {
-  const p = archivePathFor('-Users-dev-projects-demo-app', 'abc-123');
-  assert.ok(p.endsWith('/databases/archive/-Users-dev-projects-demo-app/abc-123.jsonl'));
-});
-
-test('archivePathFor tolerates a missing project folder', () => {
-  assert.ok(archivePathFor('', 'abc-123').endsWith('/databases/archive/_/abc-123.jsonl'));
 });
