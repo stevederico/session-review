@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import MessageCircle from '@stevederico/skateboard-ui/icons/MessageCircle';
 import Coins from '@stevederico/skateboard-ui/icons/Coins';
+import TrendingUp from '@stevederico/skateboard-ui/icons/TrendingUp';
 import DollarSign from '@stevederico/skateboard-ui/icons/DollarSign';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import BarChart3 from '@stevederico/skateboard-ui/icons/ChartColumn';
@@ -25,17 +26,66 @@ import {
   TableHead,
   TableCell,
 } from '@stevederico/skateboard-ui/shadcn/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@stevederico/skateboard-ui/shadcn/ui/select';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import { formatCost, formatTokens, shortModel } from '../lib/format.js';
+import { formatCost, formatTokens, formatDate, relativeTime, shortModel } from '../lib/format.js';
+
+/**
+ * Sort options for the projects list. Each defines how to read its numeric
+ * sort key (`get`) and how to render the value shown on the right (`format`).
+ * `isDate` keys sort by timestamp and size their bar by recency, not magnitude.
+ */
+const PROJECT_SORTS = [
+  { value: 'cost', label: 'Cost', get: (p) => Number(p.cost) || 0, format: (p) => formatCost(p.cost) },
+  {
+    value: 'tokens',
+    label: 'Tokens',
+    get: (p) => Number(p.tokens) || 0,
+    format: (p) => `${formatTokens(p.tokens)} tokens`,
+  },
+  {
+    value: 'messages',
+    label: 'Messages',
+    get: (p) => Number(p.messages) || 0,
+    format: (p) => `${Number(p.messages).toLocaleString()} msgs`,
+  },
+  {
+    value: 'sessions',
+    label: 'Sessions',
+    get: (p) => Number(p.sessions) || 0,
+    format: (p) => `${Number(p.sessions).toLocaleString()} sessions`,
+  },
+  {
+    value: 'updated',
+    label: 'Last updated',
+    isDate: true,
+    get: (p) => Date.parse(p.updated) || 0,
+    format: (p) => relativeTime(p.updated),
+  },
+  {
+    value: 'created',
+    label: 'Date created',
+    isDate: true,
+    get: (p) => Date.parse(p.created) || 0,
+    format: (p) => formatDate(p.created),
+  },
+];
 
 const COST_DISCLAIMER = 'Costs are estimates based on public per-model pricing.';
 
 /**
  * Analytics dashboard for Claude Code usage and cost.
  *
- * Fetches `/cc/stats` on mount and renders summary stat cards, a by-model
- * table, a top-projects cost breakdown, and a 60-day activity bar chart.
- * Handles loading, error, and empty states.
+ * Fetches `/cc/stats` on mount and renders summary stat cards (including
+ * average tokens/day), a tokens-per-day bar chart, a by-model table,
+ * and a projects breakdown sortable by cost, tokens, messages, sessions, or
+ * created/updated date. Handles loading, error, and empty states.
  *
  * @returns {JSX.Element} The analytics view.
  */
@@ -43,6 +93,7 @@ export default function AnalyticsView() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [projectSort, setProjectSort] = useState('cost');
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -117,17 +168,30 @@ export default function AnalyticsView() {
     );
   }
 
+  const dailyAscending = [...byDay].reverse();
+  const dailyTokenTotal = dailyAscending.reduce((sum, d) => sum + (Number(d.tokens) || 0), 0);
+  // Average over days that actually had activity, matching the chart below.
+  const avgTokensPerDay = dailyAscending.length ? dailyTokenTotal / dailyAscending.length : 0;
+
   const statCards = [
     { label: 'Sessions', value: totals.sessions.toLocaleString(), Icon: MessagesSquare },
     { label: 'Messages', value: totals.messages.toLocaleString(), Icon: MessageCircle },
     { label: 'Tokens', value: formatTokens(totals.tokens), Icon: Coins },
+    { label: 'Avg Tokens/Day', value: formatTokens(avgTokensPerDay), Icon: TrendingUp },
     { label: 'Est. Cost', value: formatCost(totals.cost), Icon: DollarSign },
   ];
 
-  const maxProjectCost = byProject.reduce((max, p) => Math.max(max, Number(p.cost) || 0), 0);
-  const dailyAscending = [...byDay].reverse();
-  const maxDailyMessages = dailyAscending.reduce(
-    (max, d) => Math.max(max, Number(d.messages) || 0),
+  const activeSort = PROJECT_SORTS.find((s) => s.value === projectSort) ?? PROJECT_SORTS[0];
+  const sortedProjects = [...byProject].sort((a, b) => activeSort.get(b) - activeSort.get(a));
+  // Bar baseline: date sorts scale by recency within [min, max]; others from 0.
+  const sortValues = sortedProjects.map(activeSort.get);
+  const maxSort = sortValues.reduce((max, v) => Math.max(max, v), 0);
+  const minSort = activeSort.isDate
+    ? sortValues.reduce((min, v) => Math.min(min, v), maxSort)
+    : 0;
+  const sortRange = maxSort - minSort;
+  const maxDailyTokens = dailyAscending.reduce(
+    (max, d) => Math.max(max, Number(d.tokens) || 0),
     0,
   );
 
@@ -135,7 +199,7 @@ export default function AnalyticsView() {
     <>
       <Header title="Analytics" />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {statCards.map(({ label, value, Icon }) => (
             <Card key={label}>
               <CardContent className="flex items-start justify-between gap-2">
@@ -150,6 +214,31 @@ export default function AnalyticsView() {
         </div>
 
         <p className="mt-3 text-label-sm text-muted-foreground">{COST_DISCLAIMER}</p>
+
+        <h2 className="mt-8 mb-3 text-heading-md">Tokens per day</h2>
+        {dailyAscending.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recent activity.</p>
+        ) : (
+          <div
+            className="flex h-32 items-end gap-0.5"
+            role="img"
+            aria-label="Token usage per day"
+          >
+            {dailyAscending.map((day) => (
+              <div
+                key={day.day}
+                title={`${day.day}: ${formatTokens(day.tokens)} tokens · ${Number(day.messages).toLocaleString()} msgs · ${formatCost(day.cost)}`}
+                className={cn(
+                  'flex-1 rounded-t bg-primary transition-opacity hover:opacity-80',
+                  (Number(day.tokens) || 0) === 0 && 'opacity-20',
+                )}
+                style={{
+                  height: `${maxDailyTokens ? Math.max(((Number(day.tokens) || 0) / maxDailyTokens) * 100, 2) : 0}%`,
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <h2 className="mt-8 mb-3 text-heading-md">By model</h2>
         {byModel.length === 0 ? (
@@ -183,58 +272,55 @@ export default function AnalyticsView() {
           </Card>
         )}
 
-        <h2 className="mt-8 mb-3 text-heading-md">Top projects</h2>
-        {byProject.length === 0 ? (
+        <div className="mt-8 mb-3 flex items-center justify-between gap-4">
+          <h2 className="text-heading-md">Projects</h2>
+          <Select value={projectSort} onValueChange={setProjectSort}>
+            <SelectTrigger className="w-40" aria-label="Sort projects by" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROJECT_SORTS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {sortedProjects.length === 0 ? (
           <p className="text-sm text-muted-foreground">No project activity recorded.</p>
         ) : (
           <div className="flex flex-col gap-4">
-            {byProject.map((project) => (
-              <div key={project.project} className="flex flex-col gap-2">
-                <div className="flex items-baseline justify-between gap-4">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate font-medium">{project.name}</span>
-                    <span className="text-label-sm text-muted-foreground">
-                      {Number(project.sessions).toLocaleString()} sessions ·{' '}
-                      {Number(project.messages).toLocaleString()} msgs
+            {sortedProjects.map((project) => {
+              const value = activeSort.get(project);
+              const width = sortRange ? Math.max(((value - minSort) / sortRange) * 100, 2) : 0;
+              return (
+                <div key={project.project} className="flex flex-col gap-2">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate font-medium">{project.name}</span>
+                      <span className="text-label-sm text-muted-foreground">
+                        {Number(project.sessions).toLocaleString()} sessions ·{' '}
+                        {Number(project.messages).toLocaleString()} msgs ·{' '}
+                        {formatTokens(project.tokens)} tokens
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-right tabular-nums">
+                      {activeSort.format(project)}
                     </span>
                   </div>
-                  <span className="shrink-0 text-right tabular-nums">
-                    {formatCost(project.cost)}
-                  </span>
+                  <div className="h-1.5 w-full overflow-hidden rounded-md bg-muted">
+                    <div
+                      className="h-full rounded-md bg-primary"
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-md bg-muted">
-                  <div
-                    className="h-full rounded-md bg-primary"
-                    style={{
-                      width: `${maxProjectCost ? ((Number(project.cost) || 0) / maxProjectCost) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <h2 className="mt-8 mb-3 text-heading-md">Activity (last 60 days)</h2>
-        {dailyAscending.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent activity.</p>
-        ) : (
-          <div className="flex h-32 items-end gap-0.5" role="img" aria-label="Messages per day for the last 60 days">
-            {dailyAscending.map((day) => (
-              <div
-                key={day.day}
-                title={`${day.day}: ${Number(day.messages).toLocaleString()} msgs / ${formatCost(day.cost)}`}
-                className={cn(
-                  'flex-1 rounded-t bg-primary transition-opacity hover:opacity-80',
-                  (Number(day.messages) || 0) === 0 && 'opacity-20',
-                )}
-                style={{
-                  height: `${maxDailyMessages ? Math.max(((Number(day.messages) || 0) / maxDailyMessages) * 100, 2) : 0}%`,
-                }}
-              />
-            ))}
-          </div>
-        )}
         <p className="mt-3 text-label-sm text-muted-foreground">{COST_DISCLAIMER}</p>
       </div>
     </>
