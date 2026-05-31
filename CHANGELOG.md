@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+  Add project tagging
+  Add tag control
+  Store session overrides
+  Merge header search
+  Remove search route
+
 ## 0.10.0
 
   Redesign session cards

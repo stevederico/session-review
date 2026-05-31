@@ -43,11 +43,6 @@
             "icon": "messages-square"
         },
         {
-            "title": "Search",
-            "url": "search",
-            "icon": "search"
-        },
-        {
             "title": "Analytics",
             "url": "analytics",
             "icon": "chart-bar"

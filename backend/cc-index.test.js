@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractText, priceFor, costOf, canonicalProject, isConversational } from './cc-index.js';
+import { extractText, priceFor, costOf, canonicalProject, isConversational, resolveProject } from './cc-index.js';
 
 test('extractText returns a plain string message body', () => {
   assert.equal(extractText({ message: { role: 'user', content: 'hello' } }), 'hello');
@@ -108,5 +108,27 @@ test('isConversational rejects an empty text block', () => {
   assert.equal(
     isConversational({ type: 'assistant', message: { content: [{ type: 'text', text: '   ' }] } }),
     false
+  );
+});
+
+test('resolveProject honors a manual override', () => {
+  const overrides = new Map([['abc', '/Users/dev/projects/other-app']]);
+  assert.deepEqual(
+    resolveProject({ id: 'abc', cwd: '/Users/dev/projects' }, overrides),
+    { key: '/Users/dev/projects/other-app', name: 'fund-admin' }
+  );
+});
+
+test('resolveProject falls back to canonical project when unset', () => {
+  assert.equal(
+    resolveProject({ id: 'xyz', cwd: '/Users/dev/projects/demo-app' }, new Map()).name,
+    'onyx'
+  );
+});
+
+test('resolveProject works without an overrides map', () => {
+  assert.equal(
+    resolveProject({ id: 'x', cwd: '/Users/dev/projects/demo-app' }).name,
+    'onyx'
   );
 });

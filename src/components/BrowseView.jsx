@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import Header from '@stevederico/skateboard-ui/Header';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
+import { Separator } from '@stevederico/skateboard-ui/shadcn/ui/separator';
 import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
 import {
@@ -25,9 +25,13 @@ import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import { formatCost, formatTokens, relativeTime, shortModel, folderName } from '../lib/format.js';
 import Transcript from './Transcript.jsx';
+import HeaderSearch from './HeaderSearch.jsx';
 
 /** Sentinel value for the "All projects" Select option (no project filter). */
 const ALL_PROJECTS = '__all__';
+
+/** Sentinel for the tag control's "Auto-detect" option (clears any override). */
+const AUTO_DETECT = '__auto__';
 
 /** Total tokens for a session: input + output + cache read + cache create. */
 const tokensOf = (s) =>
@@ -208,6 +212,32 @@ export default function BrowseView() {
     loadDetail(id);
   };
 
+  /**
+   * File the open conversation under a project, or clear its assignment with
+   * AUTO_DETECT. Refreshes projects, the session list, and the open detail so
+   * the move is reflected everywhere.
+   *
+   * @param {string} value - Target project key, or AUTO_DETECT to clear.
+   */
+  const handleTagProject = async (value) => {
+    if (!selectedSessionId) return;
+    const project = value === AUTO_DETECT ? null : value;
+    try {
+      await apiRequest('/cc/tag', {
+        method: 'POST',
+        body: JSON.stringify({ id: selectedSessionId, project }),
+      });
+      await Promise.all([
+        loadProjects(),
+        loadSessions(selectedProject),
+        loadDetail(selectedSessionId),
+      ]);
+    } catch (err) {
+      console.error('Failed to assign project', err);
+      setStatus('Could not assign this conversation to a project.');
+    }
+  };
+
   /** Force a backend re-scan, then reload projects and the current session list. */
   const handleRefresh = async () => {
     setIsReindexing(true);
@@ -241,21 +271,30 @@ export default function BrowseView() {
   const sortedSessions = [...sessions].sort(
     (a, b) => activeSessionSort.get(b) - activeSessionSort.get(a),
   );
+  // Alphabetical project list for the tag control (easier to scan than by metric).
+  const projectsByName = [...projects].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <Header title="Browse">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isReindexing}
-          aria-label="Reindex transcripts"
-        >
-          <RefreshCw size={18} className={cn(isReindexing && 'animate-spin')} />
-          Refresh
-        </Button>
-      </Header>
+      {/* Top bar: global conversation search replaces the page title; results
+          open in the right transcript pane via handleSelectSession. */}
+      <header className="flex h-(--header-height) shrink-0 items-center gap-2">
+        <div className="flex w-full items-center gap-2 px-4 lg:px-6">
+          <HeaderSearch onSelect={handleSelectSession} className="w-full max-w-xl" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isReindexing}
+            aria-label="Reindex transcripts"
+            className="ml-auto"
+          >
+            <RefreshCw size={18} className={cn(isReindexing && 'animate-spin')} />
+            Refresh
+          </Button>
+        </div>
+      </header>
+      <Separator />
 
       {status ? (
         <p role="status" aria-live="polite" className="px-4 py-2 text-sm text-muted-foreground lg:px-6">
@@ -395,6 +434,32 @@ export default function BrowseView() {
                     <Badge variant="outline">{detailMeta.msg_count} msgs</Badge>
                   ) : null}
                   <Badge variant="outline">{formatCost(detailMeta?.cost)}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Project</span>
+                  <Select
+                    value={detailMeta?.project_key ?? AUTO_DETECT}
+                    onValueChange={handleTagProject}
+                  >
+                    <SelectTrigger className="w-56" aria-label="Assign this conversation to a project" size="sm">
+                      <SelectValue>
+                        {(value) => {
+                          if (!value || value === AUTO_DETECT) return 'Auto-detect';
+                          const p = projects.find((proj) => proj.project === value);
+                          return p ? p.name : (detailMeta?.project_name ?? value);
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={AUTO_DETECT}>Auto-detect (clear)</SelectItem>
+                      {projectsByName.map((p) => (
+                        <SelectItem key={p.project} value={p.project}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {detailMeta?.overridden ? <Badge variant="secondary">tagged</Badge> : null}
                 </div>
               </div>
               <div className="min-h-0 flex-1">
