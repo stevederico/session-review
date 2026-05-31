@@ -35,16 +35,17 @@ const tokensOf = (s) =>
   (Number(s.cache_read) || 0) + (Number(s.cache_create) || 0);
 
 /**
- * Sort options for the session list. Each defines how to read its numeric sort
- * key (`get`); all sort descending. Mirrors the analytics project sorts, minus
- * "Sessions" (each row is a single session).
+ * Sort options that drive both the project picker and the session list. `get`
+ * reads the numeric key from a session row, `getProject` from a project row;
+ * both sort descending. Mirrors the analytics project sorts, minus "Sessions"
+ * (each session row is a single session).
  */
 const SESSION_SORTS = [
-  { value: 'recent', label: 'Last updated', get: (s) => Date.parse(s.last_ts) || 0 },
-  { value: 'created', label: 'Date created', get: (s) => Date.parse(s.first_ts) || 0 },
-  { value: 'cost', label: 'Cost', get: (s) => Number(s.cost) || 0 },
-  { value: 'tokens', label: 'Tokens', get: (s) => tokensOf(s) },
-  { value: 'messages', label: 'Messages', get: (s) => Number(s.msg_count) || 0 },
+  { value: 'recent', label: 'Last updated', get: (s) => Date.parse(s.last_ts) || 0, getProject: (p) => Date.parse(p.last_ts) || 0 },
+  { value: 'created', label: 'Date created', get: (s) => Date.parse(s.first_ts) || 0, getProject: (p) => Date.parse(p.created) || 0 },
+  { value: 'cost', label: 'Cost', get: (s) => Number(s.cost) || 0, getProject: (p) => Number(p.cost) || 0 },
+  { value: 'tokens', label: 'Tokens', get: (s) => tokensOf(s), getProject: (p) => Number(p.tokens) || 0 },
+  { value: 'messages', label: 'Messages', get: (s) => Number(s.msg_count) || 0, getProject: (p) => Number(p.messages) || 0 },
 ];
 
 /** Render a centered loading Spinner that fills its parent. */
@@ -85,25 +86,10 @@ function ErrorState({ message, onRetry }) {
  * @returns {JSX.Element}
  */
 function SessionMeta({ session }) {
-  const models = (session.models || '')
-    .split(',')
-    .map((m) => shortModel(m.trim()))
-    .filter(Boolean)
-    .join(', ');
   return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-      <span>{relativeTime(session.last_ts)}</span>
-      <span aria-hidden="true">·</span>
+    <span className="flex w-full items-center justify-between text-xs text-muted-foreground">
       <span>{session.msg_count} msgs</span>
-      <span aria-hidden="true">·</span>
       <span>{formatTokens(tokensOf(session))} tok</span>
-      {models ? (
-        <>
-          <span aria-hidden="true">·</span>
-          <span className="truncate">{models}</span>
-        </>
-      ) : null}
-      <span aria-hidden="true">·</span>
       <span>{formatCost(session.cost)}</span>
     </span>
   );
@@ -246,8 +232,12 @@ export default function BrowseView() {
     .map((m) => shortModel(m.trim()))
     .filter(Boolean);
 
-  // Sort the loaded session list client-side (descending) by the active key.
+  // Sort both the project picker and the loaded session list client-side
+  // (descending) by the active key.
   const activeSessionSort = SESSION_SORTS.find((s) => s.value === sessionSort) ?? SESSION_SORTS[0];
+  const sortedProjects = [...projects].sort(
+    (a, b) => activeSessionSort.getProject(b) - activeSessionSort.getProject(a),
+  );
   const sortedSessions = [...sessions].sort(
     (a, b) => activeSessionSort.get(b) - activeSessionSort.get(a),
   );
@@ -294,7 +284,7 @@ export default function BrowseView() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
-                {projects.map((p) => (
+                {sortedProjects.map((p) => (
                   <SelectItem key={p.project} value={p.project}>
                     {p.name} ({p.sessions})
                   </SelectItem>
@@ -303,7 +293,7 @@ export default function BrowseView() {
             </Select>
 
             <Select value={sessionSort} onValueChange={setSessionSort}>
-              <SelectTrigger className="w-full" aria-label="Sort conversations by" size="sm">
+              <SelectTrigger className="w-full" aria-label="Sort projects and conversations by" size="sm">
                 <SelectValue placeholder="Sort by">
                   {(value) => `Sort: ${SESSION_SORTS.find((s) => s.value === value)?.label ?? value}`}
                 </SelectValue>
@@ -352,13 +342,17 @@ export default function BrowseView() {
                         onClick={() => handleSelectSession(session.id)}
                         aria-current={isSelected ? 'true' : undefined}
                         className={cn(
-                          'flex w-full flex-col gap-1 rounded-md p-3 text-left outline-none transition-colors',
+                          'flex w-full flex-col gap-2 rounded-md px-4 py-4 text-left outline-none transition-colors',
                           'hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
                           isSelected && 'bg-accent',
                         )}
                       >
-                        <span className="truncate text-sm font-medium text-foreground">
-                          <span className="text-muted-foreground">{folderName(session)}</span>{' '}{session.summary || '(no summary)'}
+                        <span className="flex w-full items-center justify-between gap-x-2 text-xs text-muted-foreground">
+                          <span className="truncate font-semibold">{folderName(session)}</span>
+                          <span className="shrink-0">{relativeTime(session.last_ts)}</span>
+                        </span>
+                        <span className="w-full truncate text-xs text-foreground">
+                          {session.summary || '(no summary)'}
                         </span>
                         <SessionMeta session={session} />
                       </button>
@@ -391,9 +385,6 @@ export default function BrowseView() {
           {selectedSessionId && !detailLoading && !detailError && detail ? (
             <>
               <div className="flex shrink-0 flex-col gap-2 border-b border-border p-4 lg:px-6">
-                <h2 className="text-pretty text-base font-medium text-foreground">
-                  {detailMeta?.summary || '(no summary)'}
-                </h2>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {detailMeta?.cwd ? <span className="truncate font-mono">{detailMeta.cwd}</span> : null}
                   {detailMeta?.git_branch ? <Badge variant="outline">{detailMeta.git_branch}</Badge> : null}
