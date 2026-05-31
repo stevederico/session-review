@@ -49,3 +49,19 @@ export function shortModel(model) {
   if (!model) return '';
   return model.replace(/^claude-/, '').replace(',<synthetic>', '');
 }
+
+/**
+ * Working-folder name for a session, e.g. `cc-review`.
+ *
+ * Prefers the real `cwd` basename — it preserves dashes in the folder name,
+ * which the dash-encoded `project` key cannot distinguish from path
+ * separators. Falls back to the project key, then a placeholder.
+ *
+ * @param {{cwd?:string, project?:string}} session
+ * @returns {string}
+ */
+export function folderName(session) {
+  const raw = session?.cwd || session?.project || '';
+  const base = String(raw).replace(/[/\\]+$/, '').split(/[/\\]/).filter(Boolean).pop();
+  return base || '(unknown)';
+}

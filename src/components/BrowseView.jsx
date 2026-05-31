@@ -23,7 +23,7 @@ import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
-import { formatCost, relativeTime, shortModel } from '../lib/format.js';
+import { formatCost, relativeTime, shortModel, folderName } from '../lib/format.js';
 import Transcript from './Transcript.jsx';
 
 /** Sentinel value for the "All projects" Select option (no project filter). */
@@ -316,7 +316,7 @@ export default function BrowseView() {
                         )}
                       >
                         <span className="truncate text-sm font-medium text-foreground">
-                          {session.summary || '(no summary)'}
+                          <span className="text-muted-foreground">{folderName(session)}</span>{' '}{session.summary || '(no summary)'}
                         </span>
                         <SessionMeta session={session} />
                       </button>

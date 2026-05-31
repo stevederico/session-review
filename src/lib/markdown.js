@@ -310,7 +310,28 @@ function parseList(lines, start, baseIndent) {
  *   `{ type:'hr' }`,
  *   `{ type:'table', header:string[], rows:string[][] }`.
  */
-export function parseMarkdown(src) {
+/**
+ * Strip Claude Code slash-command meta tags from raw message text.
+ *
+ * Transcripts embed XML-like markers (`<command-message>`, `<command-name>`,
+ * `<command-args>`, `<local-command-caveat>`, `<local-command-stdout>`, …) that
+ * are noise when reading a conversation. Remove the whole element (open tag,
+ * content, close tag) for any `<command-*>` / `<local-command-*>` pair, then
+ * drop any leftover unpaired tags and collapse the blank lines left behind.
+ *
+ * @param {string} text - Raw message text.
+ * @returns {string} Text with command meta tags removed.
+ */
+export function stripCommandTags(text) {
+  return String(text ?? '')
+    .replace(/<((?:local-)?command-[a-z-]+)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<\/?(?:local-)?command-[a-z-]+\b[^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+export function parseMarkdown(rawSrc) {
+  const src = stripCommandTags(rawSrc);
   const lines = String(src ?? '').replace(/\r\n?/g, '\n').split('\n');
   const tokens = [];
   let i = 0;
