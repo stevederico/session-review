@@ -13,6 +13,7 @@ import Layout from '@stevederico/skateboard-ui/Layout';
 import constants from './constants.json';
 import BrowseView from './components/BrowseView.jsx';
 import AnalyticsView from './components/AnalyticsView.jsx';
+import SettingsView from './components/SettingsView.jsx';
 
 /** Route table — paths are relative (no leading slash). */
 const appRoutes = [
@@ -24,5 +25,6 @@ createSkateboardApp({
   constants,
   appRoutes,
   defaultRoute: 'home',
-  overrides: { layout: Layout },
+  // Override the shell settings page so transcript reindexing lives under Settings.
+  overrides: { layout: Layout, settings: SettingsView },
 });

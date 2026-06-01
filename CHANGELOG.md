@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.0
+
+  Move refresh to settings
+  Add transcripts reindex card
+  Pin version to bottom
+  Show real package version
+
 ## 0.16.0
 
   Show resume command
