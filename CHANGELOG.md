@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.0
+
+  Show resume command
+  Copy on list rows
+  Show in detail header
+  Prefix cd into cwd
+
 ## 0.15.0
 
   Remove static tokens card
