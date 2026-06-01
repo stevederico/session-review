@@ -19,13 +19,13 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import { formatCost, formatTokens, relativeTime, shortModel, folderName } from '../lib/format.js';
 import Transcript from './Transcript.jsx';
 import HeaderSearch from './HeaderSearch.jsx';
+import ResumeKey from './ResumeKey.jsx';
 
 /** Sentinel value for the "All projects" Select option (no project filter). */
 const ALL_PROJECTS = '__all__';
@@ -127,7 +127,6 @@ export default function BrowseView() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
 
-  const [isReindexing, setIsReindexing] = useState(false);
   const [status, setStatus] = useState('');
 
   /** Fetch all projects; default the picker to "All projects". */
@@ -238,24 +237,6 @@ export default function BrowseView() {
     }
   };
 
-  /** Force a backend re-scan, then reload projects and the current session list. */
-  const handleRefresh = async () => {
-    setIsReindexing(true);
-    setStatus('');
-    try {
-      const result = await apiRequest('/cc/reindex', { method: 'POST' });
-      const files = result?.files ?? 0;
-      const changed = result?.changed ?? 0;
-      setStatus(`Reindexed ${files} file${files === 1 ? '' : 's'}, ${changed} changed.`);
-      await Promise.all([loadProjects(), loadSessions(selectedProject)]);
-    } catch (err) {
-      console.error('Reindex failed', err);
-      setStatus('Reindex failed. Check that the local server is running.');
-    } finally {
-      setIsReindexing(false);
-    }
-  };
-
   const detailMeta = detail?.meta ?? null;
   const detailModels = (detailMeta?.models || '')
     .split(',')
@@ -281,17 +262,6 @@ export default function BrowseView() {
       <header className="flex h-(--header-height) shrink-0 items-center gap-2">
         <div className="flex w-full items-center gap-2 px-4 lg:px-6">
           <HeaderSearch onSelect={handleSelectSession} className="w-full max-w-xl" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isReindexing}
-            aria-label="Reindex transcripts"
-            className="ml-auto"
-          >
-            <RefreshCw size={18} className={cn(isReindexing && 'animate-spin')} />
-            Refresh
-          </Button>
         </div>
       </header>
       <Separator />
@@ -375,7 +345,7 @@ export default function BrowseView() {
                 {sortedSessions.map((session) => {
                   const isSelected = session.id === selectedSessionId;
                   return (
-                    <li key={session.id}>
+                    <li key={session.id} className="group/session relative">
                       <button
                         type="button"
                         onClick={() => handleSelectSession(session.id)}
@@ -395,6 +365,14 @@ export default function BrowseView() {
                         </span>
                         <SessionMeta session={session} />
                       </button>
+                      {/* Copy `claude --resume <id>` without opening the row; revealed
+                          on hover/focus so it doesn't clutter the dense list. */}
+                      <ResumeKey
+                        id={session.id}
+                        cwd={session.cwd}
+                        variant="compact"
+                        className="absolute right-2 top-3 rounded bg-accent opacity-0 group-hover/session:opacity-100 focus-visible:opacity-100"
+                      />
                     </li>
                   );
                 })}
@@ -461,6 +439,9 @@ export default function BrowseView() {
                   </Select>
                   {detailMeta?.overridden ? <Badge variant="secondary">tagged</Badge> : null}
                 </div>
+                {/* Resume key — the exact command to reopen this conversation in
+                    the terminal (`claude --resume <id>`). */}
+                <ResumeKey id={detailMeta?.id ?? selectedSessionId} cwd={detailMeta?.cwd} />
               </div>
               <div className="min-h-0 flex-1">
                 <Transcript records={detail.records} meta={detail.meta} />
