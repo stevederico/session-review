@@ -10,7 +10,6 @@ import { compare as legacyBcryptCompare } from "./vendor/legacy-bcrypt.js";
 import crypto from "crypto";
 
 import { databaseManager } from "./adapters/manager.js";
-import * as cc from "./cc-index.js";
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile, mkdir, stat, readFileSync, writeFileSync, statSync } from 'node:fs';
@@ -957,92 +956,6 @@ app.post("/api/payment", async (c) => {
 
 // ==== STATIC ROUTES ====
 app.get("/api/health", (c) => c.json({ status: "ok", timestamp: Date.now() }));
-
-// ==== CLAUDE CODE TRANSCRIPT ROUTES (read-only, local) ====
-/** List projects with session counts and aggregate cost. */
-app.get("/api/cc/projects", (c) => {
-  try {
-    return c.json(cc.projects());
-  } catch (err) {
-    logger.error("cc/projects failed", { error: err.message });
-    return c.json({ error: "Failed to read transcripts" }, 500);
-  }
-});
-
-/** List sessions, optionally filtered by ?project=<dir>. */
-app.get("/api/cc/sessions", (c) => {
-  try {
-    return c.json(cc.sessions(c.req.query("project")));
-  } catch (err) {
-    logger.error("cc/sessions failed", { error: err.message });
-    return c.json({ error: "Failed to read sessions" }, 500);
-  }
-});
-
-/** Full transcript (raw records) for a session id. */
-app.get("/api/cc/session/:id", (c) => {
-  try {
-    const data = cc.session(c.req.param("id"));
-    if (!data) return c.json({ error: "Session not found" }, 404);
-    return c.json(data);
-  } catch (err) {
-    logger.error("cc/session failed", { error: err.message });
-    return c.json({ error: "Failed to read session" }, 500);
-  }
-});
-
-/** Full-text search across all sessions: ?q=&project= */
-app.get("/api/cc/search", (c) => {
-  try {
-    return c.json(cc.search(c.req.query("q"), c.req.query("project")));
-  } catch (err) {
-    logger.error("cc/search failed", { error: err.message });
-    return c.json({ error: "Search failed" }, 500);
-  }
-});
-
-/** Usage / cost analytics aggregated across all sessions. */
-app.get("/api/cc/stats", (c) => {
-  try {
-    return c.json(cc.stats());
-  } catch (err) {
-    logger.error("cc/stats failed", { error: err.message });
-    return c.json({ error: "Failed to compute stats" }, 500);
-  }
-});
-
-/** Force a full re-index (mtime cache ignored). */
-app.post("/api/cc/reindex", (c) => {
-  try {
-    return c.json(cc.reindex(true));
-  } catch (err) {
-    logger.error("cc/reindex failed", { error: err.message });
-    return c.json({ error: "Reindex failed" }, 500);
-  }
-});
-
-/** List manual session→project assignments. */
-app.get("/api/cc/overrides", (c) => {
-  try {
-    return c.json(cc.listOverrides());
-  } catch (err) {
-    logger.error("cc/overrides failed", { error: err.message });
-    return c.json({ error: "Failed to read overrides" }, 500);
-  }
-});
-
-/** Assign a session to a project (or clear): { id, project }. project null clears. */
-app.post("/api/cc/tag", async (c) => {
-  try {
-    const body = await c.req.json();
-    const id = body?.id;
-    if (!id) return c.json({ error: "Missing session id" }, 400);
-    return c.json(cc.setOverride(id, body?.project ?? null));
-  } catch (err) {
-    logger.error("cc/tag failed", { error: err.message });
-    return c.json({ error: "Failed to assign session" }, 500);
-  }
-});
 
 /**
  * Parse JSON request body with proper error handling
