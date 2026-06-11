@@ -1,12 +1,20 @@
 /**
  * Shared clipboard-copy hook for transcript UI.
  *
- * Imports only React hooks (no JSX), so it keeps a plain `.js` extension and can
- * be shared by both the JSX-free markdown renderer (`markdownRender.js`) and the
- * Transcript components, replacing two duplicated implementations.
+ * Imports only React hooks (no JSX), so it can be shared by both the JSX-free
+ * markdown renderer (`markdownRender`) and the Transcript components, replacing
+ * two duplicated implementations.
  */
 
 import { useEffect, useRef, useState } from 'react';
+
+/** Hook result: a `copied` confirmation flag and a `copy` action. */
+interface UseCopyResult {
+  /** True during the confirmation window after a successful copy. */
+  copied: boolean;
+  /** Write `text ?? ''` to the clipboard and flash `copied`. */
+  copy: (text?: string) => Promise<void>;
+}
 
 /** Milliseconds the "copied" confirmation stays visible after a copy. */
 export const COPY_RESET_MS = 2000;
@@ -17,18 +25,17 @@ export const COPY_RESET_MS = 2000;
  * Clipboard failures are caught and logged (never thrown) so a copy error can
  * never crash the surrounding UI.
  *
- * @returns {{ copied: boolean, copy: (text?: string) => Promise<void> }}
- *   `copied` is true during the confirmation window; `copy(text)` writes
+ * @returns `copied` is true during the confirmation window; `copy(text)` writes
  *   `text ?? ''` to the clipboard.
  */
-export function useCopy() {
+export function useCopy(): UseCopyResult {
   const [copied, setCopied] = useState(false);
-  const timer = useRef(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Clear any pending reset timer when the component unmounts.
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const copy = async (text) => {
+  const copy = async (text?: string): Promise<void> => {
     try {
       await navigator.clipboard.writeText(text ?? '');
       setCopied(true);

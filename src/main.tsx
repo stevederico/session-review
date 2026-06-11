@@ -9,14 +9,15 @@
  */
 import './assets/styles.css';
 import { createSkateboardApp } from '@stevederico/skateboard-ui/App';
+import type { AppRoute } from '@stevederico/skateboard-ui/App';
 import Layout from '@stevederico/skateboard-ui/Layout';
 import constants from './constants.json';
-import BrowseView from './components/BrowseView.jsx';
-import AnalyticsView from './components/AnalyticsView.jsx';
-import SettingsView from './components/SettingsView.jsx';
+import BrowseView from './components/BrowseView';
+import AnalyticsView from './components/AnalyticsView';
+import SettingsView from './components/SettingsView';
 
 /** Route table — paths are relative (no leading slash). */
-const appRoutes = [
+const appRoutes: AppRoute[] = [
   { path: 'home', element: <BrowseView /> },
   { path: 'analytics', element: <AnalyticsView /> },
 ];

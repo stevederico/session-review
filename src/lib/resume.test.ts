@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resumeCommand } from './resume.js';
+import { resumeCommand } from './resume.ts';
 
 test('resumeCommand builds the --resume command for a session id', () => {
   assert.equal(

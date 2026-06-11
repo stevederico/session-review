@@ -70,7 +70,7 @@ When making ANY code changes, you MUST update:
 - Functions: `camelCase` verbs (`fetchUser`, `handleClick`)
 - Components: `PascalCase` (`HomeView`, `DealCard`)
 - Constants: `UPPER_SNAKE_CASE` for true constants, `camelCase` for config objects
-- Files: components as `PascalCase.jsx`, everything else `camelCase.js`
+- Files: components as `PascalCase.tsx`, everything else `camelCase.ts`
 - Boolean variables prefixed with `is`, `has`, `should` (`isLoading`, `hasAccess`)
 
 ### Function Design
@@ -86,8 +86,11 @@ When making ANY code changes, you MUST update:
 - Group related functions together in a file
 - Keep components focused — if a component file exceeds ~150 lines, consider splitting
 
-### JavaScript Style
+### TypeScript Style
 
+- TypeScript everywhere — `.ts` / `.tsx` files, `strict` mode always on
+- `@types` packages are dev-only dependencies (`@types/node`, `@types/react`, `@types/react-dom`)
+- No build-step typechecking: `npm run typecheck` runs `tsc --noEmit`; it gates `build` and `test`
 - Prefer `const` over `let` — use `let` only when reassigning
 - Prefer `async`/`await` over `.then()` chains
 - Prefer destructuring: `const { id } = user` over `const id = user.id`
@@ -97,11 +100,20 @@ When making ANY code changes, you MUST update:
 - Use object shorthand: `{ foo }` over `{ foo: foo }`
 - Use default parameters over manual checks
 - Always use ES modules — never use `require()`
-- Always use javascript — never use TypeScript or `@types` packages
+
+### TypeScript Anti-Patterns (prohibited)
+
+All of these silence the compiler instead of proving correctness:
+
+- Never use `any` — use `unknown` and narrow with type guards
+- Never use `as` casts to silence errors (especially `as unknown as X`) — prove the type instead
+- Never use `!` non-null assertions — handle the null/undefined case
+- Never use `@ts-ignore` — if truly unavoidable, use `@ts-expect-error` with a reason comment (it fails when the error goes away)
+- Never disable or loosen `strict` in tsconfig
+- Never use loose built-in types (`Function`, `object`, `{}`) — write precise signatures and shapes
+- Never cast unvalidated data at boundaries — no `JSON.parse(x) as User` without a runtime check
 
 ### Prohibited Tools & Practices
-
-- Never use TypeScript or `@types` packages
 - Never use dotenv — manually load `.env` file
 - Never use `require()` — ES modules only
 - Never use mongoose — use the `mongodb` npm package
@@ -273,7 +285,7 @@ When a project uses `constants.json`, include a `design` block:
 ### Test Runner
 
 - **Vitest** is the standard test runner — never use Jest, Mocha, or Jasmine
-- Config lives in `vite.config.js` under `test` key
+- Config lives in `vite.config.ts` under `test` key
 - Use `npm run test` for CI; `npm run test:watch` for development
 
 ### What to Test
@@ -283,9 +295,9 @@ When a project uses `constants.json`, include a `design` block:
 
 ### Test File Conventions
 
-- Test files live next to the code they test: `fetchUser.js` → `fetchUser.test.js`
-- Component tests: `HomeView.jsx` → `HomeView.test.jsx`
-- Name test files with `.test.js` / `.test.jsx` suffix — never `.spec.js`
+- Test files live next to the code they test: `fetchUser.ts` → `fetchUser.test.ts`
+- Component tests: `HomeView.tsx` → `HomeView.test.tsx`
+- Name test files with `.test.ts` / `.test.tsx` suffix — never `.spec.ts`
 - One test file per module
 
 ### Test Structure
@@ -374,15 +386,15 @@ skateboard/
 │   ├── components/       # Your custom components (e.g., HomeView.jsx)
 │   ├── assets/
 │   │   └── styles.css   # Brand color override (7 lines)
-│   ├── main.jsx         # Route definitions (16 lines)
+│   ├── main.tsx         # Route definitions (16 lines)
 │   └── constants.json   # All your app config
 ├── backend/
-│   ├── server.js        # Hono server
+│   ├── server.ts        # Hono server
 │   ├── adapters/        # Database adapters (SQLite, PostgreSQL, MongoDB)
 │   ├── databases/       # SQLite database files
 │   └── config.json      # Backend config with database settings
 ├── package.json         # Dependencies (includes skateboard-ui)
-└── vite.config.js       # Vite configuration (app-owned)
+└── vite.config.ts       # Vite configuration (app-owned)
 ```
 
 **What's NOT in your app (provided by skateboard-ui):**
@@ -394,7 +406,7 @@ skateboard/
 
 ### Frontend Stack
 - React, Vite, react-router-dom (latest versions)
-- JavaScript only, ES modules only
+- TypeScript (`strict`, no-build-step typecheck), ES modules only
 - Tailwind CSS v4+ with @tailwindcss/vite plugin
 
 ### Backend Stack
@@ -408,10 +420,10 @@ skateboard/
 The application uses a database factory pattern supporting three database types:
 
 **Database Adapters** (`backend/adapters/`):
-- `sqlite.js` - Default SQLite provider using Node.js built-in DatabaseSync
-- `postgres.js` - PostgreSQL provider with connection pooling
-- `mongodb.js` - MongoDB provider with native driver
-- `manager.js` - Unified interface and provider selection
+- `sqlite.ts` - Default SQLite provider using Node.js built-in DatabaseSync
+- `postgres.ts` - PostgreSQL provider with connection pooling
+- `mongodb.ts` - MongoDB provider with native driver
+- `manager.ts` - Unified interface and provider selection
 
 **Configuration** (`backend/config.json`):
 ```json
@@ -428,7 +440,7 @@ The application uses a database factory pattern supporting three database types:
 ### Authentication & Security
 - JWT tokens in HttpOnly cookies
 - CSRF token protection for state-changing operations
-- Bcrypt password hashing with 10 salt rounds
+- Scrypt password hashing via `node:crypto` (legacy bcrypt hashes verified and lazily rehashed on signin)
 - JWT with 30-day expiration
 - Rate limiting on auth, payments, and global endpoints
 - Security headers (CSP, HSTS, X-Frame-Options, etc.)
@@ -436,7 +448,7 @@ The application uses a database factory pattern supporting three database types:
 ### Build System Integration
 
 **Vite Configuration** (v1.1+ app-owned):
-Apps own their `vite.config.js` directly. See [reference implementation](https://github.com/stevederico/skateboard/blob/master/vite.config.js).
+Apps own their `vite.config.ts` directly. See [reference implementation](https://github.com/stevederico/skateboard/blob/master/vite.config.ts).
 
 **Styling:**
 ```css
@@ -624,9 +636,9 @@ This project was created from the skateboard boilerplate. The `skateboardVersion
 5. Update `skateboardVersion` field after applying changes
 
 ### Safe to Update (review and apply)
-- `backend/server.js` - Server logic, security updates
+- `backend/server.ts` - Server logic, security updates
 - `backend/adapters/*` - Database adapters
-- `vite.config.js` - Build configuration
+- `vite.config.ts` - Build configuration
 - `src/assets/styles.css` - Theme variables (merge carefully)
 
 ### Never Auto-Update (app-specific)

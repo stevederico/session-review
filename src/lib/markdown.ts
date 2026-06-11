@@ -3,12 +3,49 @@
  *
  * Contains no React/JSX and imports nothing, so it loads directly under
  * `node --test` and `node --check`. The React renderer lives in
- * `markdownRender.js` (also JSX-free — it builds nodes with
+ * `markdownRender` (also JSX-free — it builds nodes with
  * `React.createElement`) and imports `parseMarkdown` from here.
  * This file ALSO exports the pure inline tokenizer `parseInline`, used by the
  * renderer to turn inline markdown into tokens it then maps to React nodes.
  * No external dependencies.
  */
+
+/** A single inline-level token produced by {@link parseInline}. */
+export type InlineToken =
+  | { type: 'text'; value: string }
+  | { type: 'code'; value: string }
+  | { type: 'strong'; children: InlineToken[] }
+  | { type: 'em'; children: InlineToken[] }
+  | { type: 'del'; children: InlineToken[] }
+  | { type: 'link'; href: string; children: InlineToken[] }
+  | { type: 'autolink'; href: string };
+
+/** One item in a list block; `children` is a nested sub-list, or null. */
+export interface ListItem {
+  /** The item's inline source text. */
+  text: string;
+  /** Task-list state: true/false for `[x]`/`[ ]`, or null for a plain item. */
+  checked: boolean | null;
+  /** Nested sub-list token, or null when the item has none. */
+  children: ListBlock | null;
+}
+
+/** A list block (`<ul>`/`<ol>`), ordered or not, with its items. */
+export interface ListBlock {
+  type: 'list';
+  ordered: boolean;
+  items: ListItem[];
+}
+
+/** A single block-level token produced by {@link parseMarkdown}. */
+export type BlockToken =
+  | { type: 'heading'; level: number; text: string }
+  | { type: 'paragraph'; text: string }
+  | { type: 'code'; lang: string; code: string }
+  | ListBlock
+  | { type: 'blockquote'; text: string }
+  | { type: 'hr' }
+  | { type: 'table'; header: string[]; rows: string[][] };
 
 // --- block-level regexes -----------------------------------------------------
 const FENCE_RE = /^(\s*)(`{3,}|~{3,})\s*([^\n]*)$/;
@@ -30,13 +67,13 @@ const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/y;
 const AUTOLINK_RE = /(https?:\/\/[^\s<>()]+[^\s<>().,;:!?])/y;
 
 /** True when a line is part of a GFM table (has at least one unescaped pipe). */
-function isTableRow(line) {
+function isTableRow(line: string): boolean {
   return /\|/.test(line) && /\S/.test(line);
 }
 
 /** Split a single GFM table row into trimmed cells, dropping edge pipes. */
-function splitTableRow(line) {
-  const cells = [];
+function splitTableRow(line: string): string[] {
+  const cells: string[] = [];
   let buf = '';
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
@@ -60,16 +97,23 @@ function splitTableRow(line) {
 }
 
 /** True when a split table header row has at least one non-empty cell. */
-function hasTableHeaderCells(line) {
+function hasTableHeaderCells(line: string): boolean {
   return splitTableRow(line).some((cell) => cell !== '');
+}
+
+/** A line classified as a list item, with its marker kind and indent width. */
+interface ListItemMatch {
+  ordered: boolean;
+  indent: number;
+  content: string;
 }
 
 /**
  * Classify a line as a list item, capturing its leading-indent width.
- * @param {string} line
- * @returns {{ ordered:boolean, indent:number, content:string }|null}
+ * @param line - The source line to classify.
+ * @returns The match, or null when the line is not a list item.
  */
-function matchListItem(line) {
+function matchListItem(line: string): ListItemMatch | null {
   const ordered = ORDERED_RE.exec(line);
   if (ordered) return { ordered: true, indent: ordered[1].length, content: ordered[3] };
   const unordered = UNORDERED_RE.exec(line);
@@ -78,7 +122,7 @@ function matchListItem(line) {
 }
 
 /** Build a list item token, detecting `[ ]` / `[x]` tasks; children set later by the parser. */
-function makeListItem(content) {
+function makeListItem(content: string): ListItem {
   const task = TASK_RE.exec(content);
   if (task) {
     return { text: task[2], checked: task[1].toLowerCase() === 'x', children: null };
@@ -93,13 +137,13 @@ function makeListItem(content) {
  * literal content. If the content both begins and ends with a space and is not
  * all whitespace, exactly one leading and one trailing space are stripped.
  *
- * @param {string} src - Full inline source.
- * @param {number} pos - Index of the first backtick of the opening run.
- * @returns {{ value:string, end:number }|null} `value` is the code text and
- *   `end` is the index just past the closing run; `null` when no closing run of
- *   exactly N backticks exists (caller treats the opening run as literal text).
+ * @param src - Full inline source.
+ * @param pos - Index of the first backtick of the opening run.
+ * @returns `value` is the code text and `end` is the index just past the
+ *   closing run; `null` when no closing run of exactly N backticks exists
+ *   (caller treats the opening run as literal text).
  */
-function matchCodeSpan(src, pos) {
+function matchCodeSpan(src: string, pos: number): { value: string; end: number } | null {
   let openLen = 0;
   while (src[pos + openLen] === '`') openLen++;
   const contentStart = pos + openLen;
@@ -137,11 +181,11 @@ function matchCodeSpan(src, pos) {
  * strong > del > *em* > _em_ > link > autolink. Container tokens recurse via
  * `parseInline` for their children.
  *
- * @param {string} src - Full inline source.
- * @param {number} pos - Current scan position.
- * @returns {{ token:object, end:number }|null}
+ * @param src - Full inline source.
+ * @param pos - Current scan position.
+ * @returns The matched token plus the index just past it, or null.
  */
-function matchInlineRule(src, pos) {
+function matchInlineRule(src: string, pos: number): { token: InlineToken; end: number } | null {
   // NOTE: these emphasis/link regexes are module-level sticky (/y) and shared.
   // The recursive parseInline(m[1]) below re-runs them on the child text, which
   // mutates their `lastIndex`. So capture `end` into a local BEFORE recursing —
@@ -191,12 +235,12 @@ function matchInlineRule(src, pos) {
  * into one `{type:'text'}` token. Inline code is highest priority and is never
  * re-parsed; container tokens (strong/em/del/link) carry parsed `children`.
  *
- * @param {string} text - Inline markdown source.
- * @returns {Array<object>} Inline tokens (see spec section 1 for shapes).
+ * @param text - Inline markdown source.
+ * @returns Inline tokens (see {@link InlineToken} for shapes).
  */
-export function parseInline(text) {
+export function parseInline(text: string | null | undefined): InlineToken[] {
   const src = String(text ?? '');
-  const tokens = [];
+  const tokens: InlineToken[] = [];
   let plain = '';
   let pos = 0;
 
@@ -255,18 +299,18 @@ export function parseInline(text) {
  * separate sibling lists, matching the historical behavior). Always advances `i`,
  * so it cannot loop forever.
  *
- * @param {string[]} lines - All source lines.
- * @param {number} start - Index of the first item line at this level.
- * @param {number} baseIndent - Indent width that defines THIS level.
- * @returns {{ list:object, next:number }} The list token and the index of the
- *   first line after the list at this level.
+ * @param lines - All source lines.
+ * @param start - Index of the first item line at this level.
+ * @param baseIndent - Indent width that defines THIS level.
+ * @returns The list token and the index of the first line after the list at
+ *   this level.
  */
-function parseList(lines, start, baseIndent) {
+function parseList(lines: string[], start: number, baseIndent: number): { list: ListBlock; next: number } {
   const first = matchListItem(lines[start]);
-  const ordered = first.ordered;
-  const items = [];
+  const ordered = Boolean(first?.ordered);
+  const items: ListItem[] = [];
   let i = start;
-  let last = null; // most recently pushed item, to host a nested child
+  let last: ListItem | null = null; // most recently pushed item, to host a nested child
 
   while (i < lines.length) {
     if (lines[i].trim() === '') break; // blank line ends the list
@@ -295,22 +339,6 @@ function parseList(lines, start, baseIndent) {
 }
 
 /**
- * Parse a markdown source string into a flat array of block tokens.
- * Pure (no React) so it can be unit-tested. Never throws on malformed
- * input — anything unrecognized falls through to a paragraph.
- *
- * @param {string} src - Raw markdown text.
- * @returns {Array<object>} Flat array of block tokens. Each token is one of:
- *   `{ type:'heading', level, text }`,
- *   `{ type:'paragraph', text }`,
- *   `{ type:'code', lang, code }`,
- *   `{ type:'list', ordered, items:[{ text, checked, children }] }` (items may carry a
- *     nested `children` list token, or null),
- *   `{ type:'blockquote', text }`,
- *   `{ type:'hr' }`,
- *   `{ type:'table', header:string[], rows:string[][] }`.
- */
-/**
  * Strip Claude Code slash-command meta tags from raw message text.
  *
  * Transcripts embed XML-like markers (`<command-message>`, `<command-name>`,
@@ -319,10 +347,10 @@ function parseList(lines, start, baseIndent) {
  * content, close tag) for any `<command-*>` / `<local-command-*>` pair, then
  * drop any leftover unpaired tags and collapse the blank lines left behind.
  *
- * @param {string} text - Raw message text.
- * @returns {string} Text with command meta tags removed.
+ * @param text - Raw message text.
+ * @returns Text with command meta tags removed.
  */
-export function stripCommandTags(text) {
+export function stripCommandTags(text: string | null | undefined): string {
   return String(text ?? '')
     .replace(/<((?:local-)?command-[a-z-]+)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
     .replace(/<\/?(?:local-)?command-[a-z-]+\b[^>]*>/gi, '')
@@ -330,10 +358,18 @@ export function stripCommandTags(text) {
     .trim();
 }
 
-export function parseMarkdown(rawSrc) {
+/**
+ * Parse a markdown source string into a flat array of block tokens.
+ * Pure (no React) so it can be unit-tested. Never throws on malformed
+ * input — anything unrecognized falls through to a paragraph.
+ *
+ * @param rawSrc - Raw markdown text.
+ * @returns Flat array of block tokens (see {@link BlockToken} for shapes).
+ */
+export function parseMarkdown(rawSrc: string | null | undefined): BlockToken[] {
   const src = stripCommandTags(rawSrc);
   const lines = String(src ?? '').replace(/\r\n?/g, '\n').split('\n');
-  const tokens = [];
+  const tokens: BlockToken[] = [];
   let i = 0;
 
   while (i < lines.length) {
@@ -344,7 +380,7 @@ export function parseMarkdown(rawSrc) {
     if (fence) {
       const marker = fence[2][0];
       const lang = fence[3].trim().split(/\s+/)[0] || '';
-      const body = [];
+      const body: string[] = [];
       i++;
       while (i < lines.length) {
         const close = FENCE_RE.exec(lines[i]);
@@ -393,7 +429,7 @@ export function parseMarkdown(rawSrc) {
     ) {
       const header = splitTableRow(line);
       i += 2;
-      const rows = [];
+      const rows: string[][] = [];
       while (i < lines.length && isTableRow(lines[i]) && lines[i].trim() !== '') {
         rows.push(splitTableRow(lines[i]));
         i++;
@@ -404,9 +440,9 @@ export function parseMarkdown(rawSrc) {
 
     // Blockquote — consecutive `>` lines joined.
     if (BLOCKQUOTE_RE.test(line)) {
-      const quoted = [];
+      const quoted: string[] = [];
       while (i < lines.length && BLOCKQUOTE_RE.test(lines[i])) {
-        quoted.push(BLOCKQUOTE_RE.exec(lines[i])[1]);
+        quoted.push(BLOCKQUOTE_RE.exec(lines[i])?.[1] ?? '');
         i++;
       }
       tokens.push({ type: 'blockquote', text: quoted.join('\n').trim() });
@@ -423,7 +459,7 @@ export function parseMarkdown(rawSrc) {
     }
 
     // Paragraph — consecutive non-blank lines that aren't another block.
-    const para = [];
+    const para: string[] = [];
     while (i < lines.length) {
       const next = lines[i];
       if (next.trim() === '') break;

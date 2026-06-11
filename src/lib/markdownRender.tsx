@@ -1,22 +1,23 @@
 /**
  * Self-contained markdown -> React renderer for chat transcript prose.
  *
- * The pure block tokenizer (`parseMarkdown`) lives in `markdown.js` so it is
+ * The pure block tokenizer (`parseMarkdown`) lives in `markdown` so it is
  * unit-testable by `node --test`. This module maps those tokens to elements and
  * handles inline formatting. It is deliberately JSX-free — the React tree is
- * built with `React.createElement` (aliased `h`) rather than JSX — so the file
- * keeps a plain `.js` extension and stays checkable by `node --check` (a `.jsx`
- * file is not). It re-exports `parseMarkdown` for convenience. No external
- * dependencies beyond React and the shared icon set.
+ * built with `React.createElement` (aliased `h`) rather than JSX. It re-exports
+ * `parseMarkdown` for convenience. No external dependencies beyond React and
+ * the shared icon set.
  */
 
 import { createElement as h, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import Square from '@stevederico/skateboard-ui/icons/Square';
 import SquareCheck from '@stevederico/skateboard-ui/icons/SquareCheck';
 import Copy from '@stevederico/skateboard-ui/icons/Copy';
 import Check from '@stevederico/skateboard-ui/icons/Check';
-import { parseMarkdown, parseInline } from './markdown.js';
-import { useCopy } from './useCopy.js';
+import { parseMarkdown, parseInline } from './markdown';
+import type { InlineToken, BlockToken, ListItem } from './markdown';
+import { useCopy } from './useCopy';
 
 export { parseMarkdown };
 
@@ -32,10 +33,10 @@ const LINK_CLASS = 'text-primary underline underline-offset-2 hover:opacity-80';
  * attributes the renderer has always produced; text tokens are returned as bare
  * strings (React escapes them), so embedded HTML shows as literal text.
  *
- * @param {Array<object>} tokens - Inline tokens.
- * @returns {Array<(string|object)>} Mixed strings and React nodes.
+ * @param tokens - Inline tokens.
+ * @returns Mixed strings and React nodes.
  */
-function renderInline(tokens) {
+function renderInline(tokens: InlineToken[]): ReactNode[] {
   return tokens.map((tok, idx) => {
     const key = `i${idx}`;
     switch (tok.type) {
@@ -68,12 +69,12 @@ function renderInline(tokens) {
 }
 
 /** Parse + render inline markdown text in one step (drop-in for the old parseInline). */
-function inline(text) {
+function inline(text: string): ReactNode[] {
   return renderInline(parseInline(text));
 }
 
 // --- block components --------------------------------------------------------
-const HEADING_CLASSES = {
+const HEADING_CLASSES: Record<number, string> = {
   1: 'text-2xl',
   2: 'text-xl',
   3: 'text-lg',
@@ -83,7 +84,7 @@ const HEADING_CLASSES = {
 };
 
 /** Render a heading token as the matching h1..h6 element. */
-function Heading({ level, text }) {
+function Heading({ level, text }: { level: number; text: string }): ReactNode {
   return h(
     `h${level}`,
     {
@@ -94,7 +95,7 @@ function Heading({ level, text }) {
 }
 
 /** Render a list token as <ul>/<ol>; task items show check icons; nested sub-lists render inside their <li>. */
-function List({ ordered, items }) {
+function List({ ordered, items }: { ordered: boolean; items: ListItem[] }): ReactNode {
   const Tag = ordered ? 'ol' : 'ul';
   const isTaskList = items.some((it) => it.checked !== null);
   return h(
@@ -133,7 +134,7 @@ function List({ ordered, items }) {
 }
 
 /** Render a GFM table token with a header row and zebra-striped body. */
-function Table({ header, rows }) {
+function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactNode {
   return h(
     'div',
     { className: 'overflow-x-auto my-3' },
@@ -177,7 +178,7 @@ function Table({ header, rows }) {
 }
 
 /** A fenced code block with a language label and a copy-to-clipboard button. */
-function CodeBlock({ lang, code }) {
+function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
   const { copied, copy } = useCopy();
   const Icon = copied ? Check : Copy;
   return h(
@@ -211,7 +212,7 @@ function CodeBlock({ lang, code }) {
 }
 
 /** Render a single block token to a React element. */
-function renderBlock(token, key) {
+function renderBlock(token: BlockToken, key: string): ReactNode {
   switch (token.type) {
     case 'heading':
       return h(Heading, { key, level: token.level, text: token.text });
@@ -247,25 +248,44 @@ function renderBlock(token, key) {
   }
 }
 
+/** Props for the {@link Markdown} renderer. */
+interface MarkdownProps {
+  /** The markdown source to render. */
+  children: string;
+  /** Optional wrapper class names. */
+  className?: string;
+}
+
+/**
+ * Short, stable per-block label for React keys. Mirrors the original
+ * `code ?? text ?? level ?? ''` precedence per token shape: code blocks use
+ * their code, heading/paragraph/blockquote use their text, all others fall
+ * back to an empty string.
+ */
+function blockKeyHint(token: BlockToken): string {
+  if (token.type === 'code') return token.code;
+  if (token.type === 'heading' || token.type === 'paragraph' || token.type === 'blockquote') {
+    return token.text;
+  }
+  return '';
+}
+
 /**
  * Render a markdown string as React nodes. Parses block structure with
  * `parseMarkdown`, then renders each block (with inline formatting inside
  * paragraph/heading/list-item/table-cell text). Builds real React nodes —
  * never uses `dangerouslySetInnerHTML` — so raw HTML shows as literal text.
  *
- * @param {object} props
- * @param {string} props.children - The markdown source to render.
- * @param {string} [props.className] - Optional wrapper class names.
- * @returns {JSX.Element} The rendered markdown.
+ * @returns The rendered markdown.
  */
-export default function Markdown({ children, className }) {
+export default function Markdown({ children, className }: MarkdownProps): ReactNode {
   // Tokenizing is O(n) over the source; re-run only when the source changes.
   const tokens = useMemo(() => parseMarkdown(children), [children]);
   return h(
     'div',
     { className },
     tokens.map((token, idx) => {
-      const key = `${token.type}:${idx}:${(token.code ?? token.text ?? token.level ?? '').toString().slice(0, 24)}`;
+      const key = `${token.type}:${idx}:${blockKeyHint(token).slice(0, 24)}`;
       return renderBlock(token, key);
     }),
   );
