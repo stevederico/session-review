@@ -22,10 +22,58 @@ import {
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
-import { formatCost, formatTokens, relativeTime, shortModel, folderName } from '../lib/format.js';
-import Transcript from './Transcript.jsx';
-import HeaderSearch from './HeaderSearch.jsx';
-import ResumeKey from './ResumeKey.jsx';
+import { formatCost, formatTokens, relativeTime, shortModel, folderName } from '../lib/format';
+import Transcript from './Transcript';
+import HeaderSearch from './HeaderSearch';
+import ResumeKey from './ResumeKey';
+
+/** A project row from `/cc/projects`. */
+interface Project {
+  project: string;
+  name: string;
+  sessions: number;
+  tokens: number;
+  cost: number;
+  messages: number;
+  last_ts: string;
+  created: string;
+}
+
+/** A session row from `/cc/sessions`. */
+interface Session {
+  id: string;
+  summary?: string;
+  cwd?: string;
+  project?: string;
+  msg_count: number;
+  cost: number;
+  in_tok: number;
+  out_tok: number;
+  cache_read: number;
+  cache_create: number;
+  first_ts: string;
+  last_ts: string;
+}
+
+/** Session metadata from `/cc/session/:id` (the `meta` field). */
+interface SessionMetaData {
+  id?: string;
+  cwd?: string;
+  git_branch?: string;
+  models?: string;
+  msg_count?: number;
+  cost?: number;
+  project_key?: string;
+  project_name?: string;
+  overridden?: boolean;
+}
+
+/** Full `/cc/session/:id` response: metadata plus raw transcript records. */
+interface SessionDetail {
+  meta?: SessionMetaData;
+  /** Raw Claude Code JSONL records, passed straight to {@link Transcript}. */
+  records: any[];
+}
 
 /** Sentinel value for the "All projects" Select option (no project filter). */
 const ALL_PROJECTS = '__all__';
@@ -34,9 +82,19 @@ const ALL_PROJECTS = '__all__';
 const AUTO_DETECT = '__auto__';
 
 /** Total tokens for a session: input + output + cache read + cache create. */
-const tokensOf = (s) =>
+const tokensOf = (s: Session): number =>
   (Number(s.in_tok) || 0) + (Number(s.out_tok) || 0) +
   (Number(s.cache_read) || 0) + (Number(s.cache_create) || 0);
+
+/** One option in the session/project sort control. */
+interface SessionSortOption {
+  value: string;
+  label: string;
+  /** Read the numeric sort key from a session row. */
+  get: (s: Session) => number;
+  /** Read the numeric sort key from a project row. */
+  getProject: (p: Project) => number;
+}
 
 /**
  * Sort options that drive both the project picker and the session list. `get`
@@ -44,7 +102,7 @@ const tokensOf = (s) =>
  * both sort descending. Mirrors the analytics project sorts, minus "Sessions"
  * (each session row is a single session).
  */
-const SESSION_SORTS = [
+const SESSION_SORTS: SessionSortOption[] = [
   { value: 'recent', label: 'Last updated', get: (s) => Date.parse(s.last_ts) || 0, getProject: (p) => Date.parse(p.last_ts) || 0 },
   { value: 'created', label: 'Date created', get: (s) => Date.parse(s.first_ts) || 0, getProject: (p) => Date.parse(p.created) || 0 },
   { value: 'cost', label: 'Cost', get: (s) => Number(s.cost) || 0, getProject: (p) => Number(p.cost) || 0 },
@@ -64,12 +122,10 @@ function LoadingState() {
 /**
  * Render an error Empty state with a retry action.
  *
- * @param {Object} props
- * @param {string} props.message - Human-readable error description.
- * @param {Function} props.onRetry - Refetch handler bound to a "Try again" button.
- * @returns {JSX.Element}
+ * @param props.message - Human-readable error description.
+ * @param props.onRetry - Refetch handler bound to a "Try again" button.
  */
-function ErrorState({ message, onRetry }) {
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <Empty>
       <EmptyHeader>
@@ -85,11 +141,9 @@ function ErrorState({ message, onRetry }) {
 /**
  * Render one muted metadata line for a session row.
  *
- * @param {Object} props
- * @param {Object} props.session - Session row from /cc/sessions.
- * @returns {JSX.Element}
+ * @param props.session - Session row from /cc/sessions.
  */
-function SessionMeta({ session }) {
+function SessionMeta({ session }: { session: Session }) {
   return (
     <span className="flex w-full items-center justify-between text-xs text-muted-foreground">
       <span>{session.msg_count} msgs</span>
@@ -105,11 +159,9 @@ function SessionMeta({ session }) {
  *
  * Owns three independent fetch lifecycles (projects, sessions, session
  * detail), each with its own loading / error / empty handling.
- *
- * @returns {JSX.Element}
  */
 export default function BrowseView() {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectsError, setProjectsError] = useState('');
 
@@ -117,13 +169,13 @@ export default function BrowseView() {
   // from the first render (passing undefined makes Base UI treat it as
   // uncontrolled, then switching to a real value warns/breaks).
   const [selectedProject, setSelectedProject] = useState(ALL_PROJECTS);
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsError, setSessionsError] = useState('');
   const [sessionSort, setSessionSort] = useState('recent');
 
   const [selectedSessionId, setSelectedSessionId] = useState('');
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
 
@@ -134,7 +186,7 @@ export default function BrowseView() {
     setProjectsLoading(true);
     setProjectsError('');
     try {
-      const data = await apiRequest('/cc/projects');
+      const data = await apiRequest<Project[]>('/cc/projects');
       const list = Array.isArray(data) ? data : [];
       setProjects(list);
       setSelectedProject((prev) => prev || ALL_PROJECTS);
@@ -149,9 +201,9 @@ export default function BrowseView() {
   /**
    * Fetch the session list for a project key (or all sessions when ALL_PROJECTS).
    *
-   * @param {string} project - Project key, or ALL_PROJECTS for no filter.
+   * @param project - Project key, or ALL_PROJECTS for no filter.
    */
-  const loadSessions = useCallback(async (project) => {
+  const loadSessions = useCallback(async (project: string) => {
     if (!project) return;
     setSessionsLoading(true);
     setSessionsError('');
@@ -159,7 +211,7 @@ export default function BrowseView() {
       const endpoint = project === ALL_PROJECTS
         ? '/cc/sessions'
         : `/cc/sessions?project=${encodeURIComponent(project)}`;
-      const data = await apiRequest(endpoint);
+      const data = await apiRequest<Session[]>(endpoint);
       setSessions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load sessions', err);
@@ -172,14 +224,14 @@ export default function BrowseView() {
   /**
    * Fetch a single session's metadata and raw records for the transcript pane.
    *
-   * @param {string} id - Session id.
+   * @param id - Session id.
    */
-  const loadDetail = useCallback(async (id) => {
+  const loadDetail = useCallback(async (id: string) => {
     if (!id) return;
     setDetailLoading(true);
     setDetailError('');
     try {
-      const data = await apiRequest(`/cc/session/${encodeURIComponent(id)}`);
+      const data = await apiRequest<SessionDetail>(`/cc/session/${encodeURIComponent(id)}`);
       setDetail(data ?? null);
     } catch (err) {
       console.error('Failed to load session', err);
@@ -198,15 +250,15 @@ export default function BrowseView() {
   }, [selectedProject, loadSessions]);
 
   /** Switch the active project, clearing any open conversation. */
-  const handleSelectProject = (value) => {
-    setSelectedProject(value);
+  const handleSelectProject = (value: string | null) => {
+    setSelectedProject(value ?? ALL_PROJECTS);
     setSelectedSessionId('');
     setDetail(null);
     setDetailError('');
   };
 
   /** Open a conversation in the right pane and fetch its transcript. */
-  const handleSelectSession = (id) => {
+  const handleSelectSession = (id: string) => {
     setSelectedSessionId(id);
     loadDetail(id);
   };
@@ -216,9 +268,9 @@ export default function BrowseView() {
    * AUTO_DETECT. Refreshes projects, the session list, and the open detail so
    * the move is reflected everywhere.
    *
-   * @param {string} value - Target project key, or AUTO_DETECT to clear.
+   * @param value - Target project key, or AUTO_DETECT to clear.
    */
-  const handleTagProject = async (value) => {
+  const handleTagProject = async (value: string | null) => {
     if (!selectedSessionId) return;
     const project = value === AUTO_DETECT ? null : value;
     try {
@@ -301,7 +353,7 @@ export default function BrowseView() {
               </SelectContent>
             </Select>
 
-            <Select value={sessionSort} onValueChange={setSessionSort}>
+            <Select value={sessionSort} onValueChange={(value) => setSessionSort(value ?? 'recent')}>
               <SelectTrigger className="w-full" aria-label="Sort projects and conversations by" size="sm">
                 <SelectValue placeholder="Sort by">
                   {(value) => `Sort: ${SESSION_SORTS.find((s) => s.value === value)?.label ?? value}`}

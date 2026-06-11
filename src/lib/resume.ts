@@ -2,10 +2,10 @@
  * Single-quote a string for safe interpolation into a POSIX shell command.
  * Wraps in single quotes and escapes any embedded single quote as `'\''`.
  *
- * @param {string} s - Raw value (e.g. a filesystem path).
- * @returns {string} Shell-safe single-quoted token.
+ * @param s - Raw value (e.g. a filesystem path).
+ * @returns Shell-safe single-quoted token.
  */
-function shellQuote(s) {
+function shellQuote(s: string): string {
   return `'${String(s).replace(/'/g, `'\\''`)}'`;
 }
 
@@ -19,12 +19,12 @@ function shellQuote(s) {
  * resolves sessions relative to the working directory). Kept JSX-free so it can
  * be unit-tested with `node --test` and shared by the ResumeKey component.
  *
- * @param {string} id - Session id (transcript UUID).
- * @param {string} [cwd] - Conversation's working directory; prefixes a `cd`.
- * @returns {string} e.g. `cd '/repo' && claude --resume 1234-…`; empty string
+ * @param id - Session id (transcript UUID).
+ * @param cwd - Conversation's working directory; prefixes a `cd` when present.
+ * @returns e.g. `cd '/repo' && claude --resume 1234-…`; empty string
  *   for a falsy id.
  */
-export function resumeCommand(id, cwd) {
+export function resumeCommand(id: string | null | undefined, cwd?: string | null): string {
   if (!id) return '';
   const base = `claude --resume ${id}`;
   return cwd ? `cd ${shellQuote(cwd)} && ${base}` : base;

@@ -1,6 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMarkdown, parseInline, stripCommandTags } from './markdown.js';
+import { parseMarkdown, parseInline, stripCommandTags } from './markdown.ts';
+import type { ListBlock, ListItem } from './markdown.ts';
+
+/** Narrow a block token to a list block for assertions on list-only fields. */
+function asList(token: unknown): ListBlock {
+  return token as ListBlock;
+}
+
+/** Narrow a list item's nested sub-list (asserted non-null by the caller). */
+function asNestedList(item: ListItem): ListBlock {
+  return item.children as ListBlock;
+}
 
 test('stripCommandTags removes paired command meta tags with their content', () => {
   const input =
@@ -44,20 +55,20 @@ test('# Title parses as a level-1 heading', () => {
 });
 
 test('unordered list parses with ordered:false and two items', () => {
-  const [token] = parseMarkdown('- a\n- b');
+  const token = asList(parseMarkdown('- a\n- b')[0]);
   assert.equal(token.type, 'list');
   assert.equal(token.ordered, false);
   assert.equal(token.items.length, 2);
 });
 
 test('task list checkboxes capture checked state', () => {
-  const [token] = parseMarkdown('- [x] done\n- [ ] todo');
+  const token = asList(parseMarkdown('- [x] done\n- [ ] todo')[0]);
   assert.equal(token.items[0].checked, true);
   assert.equal(token.items[1].checked, false);
 });
 
 test('ordered list parses with ordered:true', () => {
-  assert.equal(parseMarkdown('1. one')[0].ordered, true);
+  assert.equal(asList(parseMarkdown('1. one')[0]).ordered, true);
 });
 
 test('> quote parses as a blockquote', () => {
@@ -192,53 +203,53 @@ test('parseInline: empty/null input yields no tokens', () => {
 // --- Issue 2: nested lists ---
 
 test('nested unordered list attaches to previous item', () => {
-  const [token] = parseMarkdown('- a\n  - b');
+  const token = asList(parseMarkdown('- a\n  - b')[0]);
   assert.equal(token.type, 'list');
   assert.equal(token.ordered, false);
   assert.equal(token.items.length, 1);
   assert.equal(token.items[0].text, 'a');
-  assert.equal(token.items[0].children.type, 'list');
-  assert.equal(token.items[0].children.items[0].text, 'b');
+  assert.equal(asNestedList(token.items[0]).type, 'list');
+  assert.equal(asNestedList(token.items[0]).items[0].text, 'b');
 });
 
 test('two top-level items stay siblings (no false nesting)', () => {
-  const [token] = parseMarkdown('- a\n- b');
+  const token = asList(parseMarkdown('- a\n- b')[0]);
   assert.equal(token.items.length, 2);
   assert.equal(token.items[0].children, null);
   assert.equal(token.items[1].children, null);
 });
 
 test('nested sub-list may be ordered under an unordered parent', () => {
-  const [token] = parseMarkdown('- a\n  1. b\n  2. c');
+  const token = asList(parseMarkdown('- a\n  1. b\n  2. c')[0]);
   assert.equal(token.ordered, false);
-  assert.equal(token.items[0].children.ordered, true);
-  assert.equal(token.items[0].children.items.length, 2);
+  assert.equal(asNestedList(token.items[0]).ordered, true);
+  assert.equal(asNestedList(token.items[0]).items.length, 2);
 });
 
 test('item after a nested block returns to the parent level', () => {
-  const [token] = parseMarkdown('- a\n  - b\n- c');
+  const token = asList(parseMarkdown('- a\n  - b\n- c')[0]);
   assert.equal(token.items.length, 2);
-  assert.equal(token.items[0].children.items[0].text, 'b');
+  assert.equal(asNestedList(token.items[0]).items[0].text, 'b');
   assert.equal(token.items[1].text, 'c');
   assert.equal(token.items[1].children, null);
 });
 
 test('deeply nested (3 levels) builds nested list tokens without looping', () => {
-  const [token] = parseMarkdown('- a\n  - b\n    - c');
-  const lvl2 = token.items[0].children;
+  const token = asList(parseMarkdown('- a\n  - b\n    - c')[0]);
+  const lvl2 = asNestedList(token.items[0]);
   assert.equal(lvl2.items[0].text, 'b');
-  assert.equal(lvl2.items[0].children.items[0].text, 'c');
-  assert.equal(lvl2.items[0].children.items[0].children, null);
+  assert.equal(asNestedList(lvl2.items[0]).items[0].text, 'c');
+  assert.equal(asNestedList(lvl2.items[0]).items[0].children, null);
 });
 
 test('non-nested ordered list items report children:null', () => {
-  const [token] = parseMarkdown('1. one\n2. two');
+  const token = asList(parseMarkdown('1. one\n2. two')[0]);
   assert.equal(token.items[0].children, null);
   assert.equal(token.items[1].children, null);
 });
 
 test('task list items carry children:null', () => {
-  const [token] = parseMarkdown('- [x] done\n- [ ] todo');
+  const token = asList(parseMarkdown('- [x] done\n- [ ] todo')[0]);
   assert.equal(token.items[0].checked, true);
   assert.equal(token.items[0].children, null);
   assert.equal(token.items[1].children, null);

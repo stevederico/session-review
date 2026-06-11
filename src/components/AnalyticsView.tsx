@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import MessageCircle from '@stevederico/skateboard-ui/icons/MessageCircle';
 import TrendingUp from '@stevederico/skateboard-ui/icons/TrendingUp';
@@ -45,14 +46,85 @@ import {
   formatDayShort,
   relativeTime,
   shortModel,
-} from '../lib/format.js';
+} from '../lib/format';
+
+/** Per-project rollup row from `/cc/stats` (`byProject`). */
+interface ProjectStat {
+  project: string;
+  name: string;
+  cost: number;
+  tokens: number;
+  messages: number;
+  sessions: number;
+  updated: string;
+  created: string;
+}
+
+/** Per-model rollup row from `/cc/stats` (`byModel`). */
+interface ModelStat {
+  models: string;
+  sessions: number;
+  out_tok: number;
+  cost: number;
+}
+
+/** Per-day rollup row from `/cc/stats` (`byDay`). */
+interface DayStat {
+  day: string;
+  sessions: number;
+  messages: number;
+  tokens: number;
+  cost: number;
+}
+
+/** Grand totals from `/cc/stats` (`totals`). */
+interface StatTotals {
+  sessions: number;
+  messages: number;
+  tokens: number;
+  cost: number;
+}
+
+/** Full `/cc/stats` response shape. */
+interface Stats {
+  totals: StatTotals;
+  byModel: ModelStat[];
+  byProject: ProjectStat[];
+  byDay: DayStat[];
+}
+
+/** Per-month rollup bucket aggregated client-side from {@link DayStat} rows. */
+interface MonthBucket {
+  sessions: number;
+  messages: number;
+  tokens: number;
+  cost: number;
+}
+
+/** A row averaged over a period — a day row or a month bucket. */
+type MetricRow = DayStat | MonthBucket;
+
+/** Which clickable summary period is showing: per-day, per-month, or total. */
+type Period = 'day' | 'month' | 'total';
+
+/** One option in the projects-list sort control. */
+interface ProjectSortOption {
+  value: string;
+  label: string;
+  /** Read the numeric sort key from a project row. */
+  get: (p: ProjectStat) => number;
+  /** Render the value shown on the right of the row. */
+  format: (p: ProjectStat) => string;
+  /** Date keys sort by recency and size their bar within [min, max]. */
+  isDate?: boolean;
+}
 
 /**
  * Sort options for the projects list. Each defines how to read its numeric
  * sort key (`get`) and how to render the value shown on the right (`format`).
  * `isDate` keys sort by timestamp and size their bar by recency, not magnitude.
  */
-const PROJECT_SORTS = [
+const PROJECT_SORTS: ProjectSortOption[] = [
   { value: 'cost', label: 'Cost', get: (p) => Number(p.cost) || 0, format: (p) => formatCost(p.cost) },
   {
     value: 'tokens',
@@ -89,40 +161,54 @@ const PROJECT_SORTS = [
 ];
 
 /** Period cycle for the clickable Avg Tokens and Est. Cost summary cards. */
-const PERIOD_CYCLE = ['day', 'month', 'total'];
+const PERIOD_CYCLE: Period[] = ['day', 'month', 'total'];
 
 /**
  * Next period in {@link PERIOD_CYCLE}, wrapping around to the start. Shaped as a
  * setState updater so it can be passed straight to a state setter.
- * @param {'day'|'month'|'total'} period - The current period.
- * @returns {'day'|'month'|'total'} The next period to display.
+ * @param period - The current period.
+ * @returns The next period to display.
  */
-const nextPeriod = (period) => PERIOD_CYCLE[(PERIOD_CYCLE.indexOf(period) + 1) % PERIOD_CYCLE.length];
+const nextPeriod = (period: Period): Period =>
+  PERIOD_CYCLE[(PERIOD_CYCLE.indexOf(period) + 1) % PERIOD_CYCLE.length];
 
 /**
  * Arithmetic mean of a list of numbers.
- * @param {number[]} values - The numbers to average.
- * @returns {number} The mean, or 0 when the list is empty.
+ * @param values - The numbers to average.
+ * @returns The mean, or 0 when the list is empty.
  */
-const mean = (values) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0);
+const mean = (values: number[]): number =>
+  values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
 
 /**
  * Format a count for display, allowing one decimal place so per-period averages
  * (e.g. 3.4 sessions/day) read sensibly while whole totals stay clean.
- * @param {number} n - The count to format.
- * @returns {string} Localized number string.
+ * @param n - The count to format.
+ * @returns Localized number string.
  */
-const formatCount = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const formatCount = (n: number): string =>
+  Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+/** Label + formatted value for one period of a summary card. */
+interface PeriodView {
+  label: string;
+  value: string;
+}
 
 /**
  * Build the three period views (day / month / total) for a summary card.
- * @param {string} noun - Metric name used in the average labels, e.g. 'Tokens'.
- * @param {string} totalLabel - Label shown in the total view, e.g. 'Est. Cost'.
- * @param {(n: number) => string} format - Formats a metric value for display.
- * @param {{day: number, month: number, total: number}} values - Per-period values.
- * @returns {Record<'day'|'month'|'total', {label: string, value: string}>}
+ * @param noun - Metric name used in the average labels, e.g. 'Tokens'.
+ * @param totalLabel - Label shown in the total view, e.g. 'Est. Cost'.
+ * @param format - Formats a metric value for display.
+ * @param values - Per-period values.
+ * @returns A label + value for each period.
  */
-const periodViews = (noun, totalLabel, format, { day, month, total }) => ({
+const periodViews = (
+  noun: string,
+  totalLabel: string,
+  format: (n: number) => string,
+  { day, month, total }: { day: number; month: number; total: number },
+): Record<Period, PeriodView> => ({
   day: { label: `Avg ${noun}/Day`, value: format(day) },
   month: { label: `Avg ${noun}/Month`, value: format(month) },
   total: { label: totalLabel, value: format(total) },
@@ -138,28 +224,28 @@ const periodViews = (noun, totalLabel, format, { day, month, total }) => ({
  * and a projects breakdown sortable by cost, tokens, messages, sessions, or
  * created/updated date. Handles loading, error, and empty states.
  *
- * @returns {JSX.Element} The analytics view.
+ * @returns The analytics view.
  */
 export default function AnalyticsView() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [projectSort, setProjectSort] = useState('cost');
   // The Avg Tokens and Est. Cost cards each cycle day → month → total on click.
-  const [tokenPeriod, setTokenPeriod] = useState('day');
-  const [costPeriod, setCostPeriod] = useState('total');
-  const [sessionPeriod, setSessionPeriod] = useState('total');
-  const [messagePeriod, setMessagePeriod] = useState('total');
+  const [tokenPeriod, setTokenPeriod] = useState<Period>('day');
+  const [costPeriod, setCostPeriod] = useState<Period>('total');
+  const [sessionPeriod, setSessionPeriod] = useState<Period>('total');
+  const [messagePeriod, setMessagePeriod] = useState<Period>('total');
 
   const loadStats = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await apiRequest('/cc/stats');
+      const data = await apiRequest<Stats>('/cc/stats');
       setStats(data);
     } catch (err) {
       console.error('Failed to load analytics stats', err);
-      setError(err?.message ?? 'Could not load analytics. Please try again.');
+      setError(err instanceof Error ? err.message : 'Could not load analytics. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -228,7 +314,7 @@ export default function AnalyticsView() {
 
   // Roll the per-day rows up into per-month buckets (YYYY-MM) so the cards can
   // average over months too. byDay already covers every day that had activity.
-  const monthMap = new Map();
+  const monthMap = new Map<string, MonthBucket>();
   for (const day of byDay) {
     const month = String(day.day).slice(0, 7);
     const bucket = monthMap.get(month) ?? { sessions: 0, messages: 0, tokens: 0, cost: 0 };
@@ -241,7 +327,8 @@ export default function AnalyticsView() {
   const byMonth = [...monthMap.values()];
 
   // Averages run over the periods that actually had activity, matching the chart.
-  const avg = (rows, key) => mean(rows.map((r) => Number(r[key]) || 0));
+  const avg = (rows: MetricRow[], key: keyof MonthBucket): number =>
+    mean(rows.map((r) => Number(r[key]) || 0));
 
   // Each clickable card maps its current period to a label + formatted value.
   const sessionViews = periodViews('Sessions', 'Sessions', formatCount, {
@@ -317,7 +404,7 @@ export default function AnalyticsView() {
                       role: 'button',
                       tabIndex: 0,
                       onClick,
-                      onKeyDown: (event) => {
+                      onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
                           onClick();
@@ -418,7 +505,7 @@ export default function AnalyticsView() {
 
         <div className="mt-8 mb-3 flex items-center justify-between gap-4">
           <h2 className="text-heading-md">Projects</h2>
-          <Select value={projectSort} onValueChange={setProjectSort}>
+          <Select value={projectSort} onValueChange={(value) => setProjectSort(value ?? 'cost')}>
             <SelectTrigger className="w-40" aria-label="Sort projects by" size="sm">
               <SelectValue placeholder="Sort by">
                 {(value) =>
