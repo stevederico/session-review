@@ -2,11 +2,26 @@ import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import Copy from '@stevederico/skateboard-ui/icons/Copy';
 import Check from '@stevederico/skateboard-ui/icons/Check';
 import Terminal from '@stevederico/skateboard-ui/icons/Terminal';
-import { useCopy } from '../lib/useCopy.js';
-import { resumeCommand } from '../lib/resume.js';
+import { useCopy } from '../lib/useCopy';
+import { resumeCommand } from '../lib/resume';
 
 /** Icon size for the copy/terminal glyphs (matches the transcript action row). */
 const ICON_SIZE = 14;
+
+/** Props for the {@link ResumeKey} copy control. */
+interface ResumeKeyProps {
+  /** Session id (transcript UUID) to resume. */
+  id: string | null | undefined;
+  /**
+   * Conversation's working directory; when present the copied command is
+   * prefixed with `cd <cwd> &&` so it resumes from anywhere.
+   */
+  cwd?: string | null;
+  /** Layout variant (default `full`). */
+  variant?: 'full' | 'compact';
+  /** Extra classes for the root element. */
+  className?: string;
+}
 
 /**
  * Surface the `claude --resume <id>` command for a session so the user can copy
@@ -20,15 +35,9 @@ const ICON_SIZE = 14;
  *
  * Copy feedback flashes a check + an `aria-live` "Copied" message via {@link useCopy}.
  *
- * @param {Object} props
- * @param {string} props.id - Session id (transcript UUID) to resume.
- * @param {string} [props.cwd] - Conversation's working directory; when present the
- *   copied command is prefixed with `cd <cwd> &&` so it resumes from anywhere.
- * @param {'full'|'compact'} [props.variant] - Layout variant (default `full`).
- * @param {string} [props.className] - Extra classes for the root element.
- * @returns {JSX.Element|null} Null when no id is available.
+ * @returns Null when no id is available.
  */
-export default function ResumeKey({ id, cwd, variant = 'full', className }) {
+export default function ResumeKey({ id, cwd, variant = 'full', className }: ResumeKeyProps) {
   const { copied, copy } = useCopy();
   const command = resumeCommand(id, cwd);
   if (!command) return null;

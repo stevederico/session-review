@@ -2,8 +2,11 @@
  * Small display formatters shared across views.
  */
 
+/** A number, or anything coercible to one (display formatters call `Number()`). */
+type Numeric = number | string | null | undefined;
+
 /** Format a USD amount: `$1.2k`, `$3.40`, `$0.012`. */
-export function formatCost(n) {
+export function formatCost(n: Numeric): string {
   const v = Number(n) || 0;
   if (v >= 1000) return `$${(v / 1000).toFixed(1)}k`;
   if (v >= 1) return `$${v.toFixed(2)}`;
@@ -12,7 +15,7 @@ export function formatCost(n) {
 }
 
 /** Format a token count: `1.2B`, `3.4M`, `12.0k`, `42`. */
-export function formatTokens(n) {
+export function formatTokens(n: Numeric): string {
   const v = Number(n) || 0;
   if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
   if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
@@ -21,10 +24,10 @@ export function formatTokens(n) {
 }
 
 /** Format an ISO timestamp as a short local date-time. */
-export function formatDate(iso) {
+export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
-  if (isNaN(d)) return '';
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleString(undefined, {
     month: 'short', day: 'numeric', year: 'numeric',
     hour: 'numeric', minute: '2-digit',
@@ -38,7 +41,7 @@ export function formatDate(iso) {
  * @param {string} day - A day key in `YYYY-MM-DD` form.
  * @returns {string} The `M/D` label, or `''` if the input is unparseable.
  */
-export function formatDayShort(day) {
+export function formatDayShort(day: string | null | undefined): string {
   if (!day) return '';
   const [, month, date] = day.split('-').map(Number);
   if (!month || !date) return '';
@@ -46,7 +49,7 @@ export function formatDayShort(day) {
 }
 
 /** Compact relative age, e.g. `3d`, `5h`, `now`. */
-export function relativeTime(iso) {
+export function relativeTime(iso: string | null | undefined): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (isNaN(then)) return '';
@@ -59,7 +62,7 @@ export function relativeTime(iso) {
 }
 
 /** Shorten a model id for display: `claude-opus-4-8` → `opus-4-8`. */
-export function shortModel(model) {
+export function shortModel(model: string | null | undefined): string {
   if (!model) return '';
   return model.replace(/^claude-/, '').replace(',<synthetic>', '');
 }
@@ -71,10 +74,10 @@ export function shortModel(model) {
  * which the dash-encoded `project` key cannot distinguish from path
  * separators. Falls back to the project key, then a placeholder.
  *
- * @param {{cwd?:string, project?:string}} session
- * @returns {string}
+ * @param session - Session row carrying a working directory and/or project key.
+ * @returns The folder name, or `(unknown)` when neither is present.
  */
-export function folderName(session) {
+export function folderName(session: { cwd?: string; project?: string } | null | undefined): string {
   const raw = session?.cwd || session?.project || '';
   const base = String(raw).replace(/[/\\]+$/, '').split(/[/\\]/).filter(Boolean).pop();
   return base || '(unknown)';

@@ -1,4 +1,6 @@
 import { useMemo, useState, useDeferredValue } from 'react';
+import type { ReactElement } from 'react';
+import type { IconProps } from '@stevederico/skateboard-ui/icons';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import Sparkles from '@stevederico/skateboard-ui/icons/Sparkles';
 import Brain from '@stevederico/skateboard-ui/icons/Brain';
@@ -13,18 +15,68 @@ import ChevronRight from '@stevederico/skateboard-ui/icons/ChevronRight';
 import Check from '@stevederico/skateboard-ui/icons/Check';
 import Copy from '@stevederico/skateboard-ui/icons/Copy';
 import X from '@stevederico/skateboard-ui/icons/X';
-import Markdown from '../lib/markdownRender.js';
-import { formatDate, shortModel, formatTokens } from '../lib/format.js';
-import { useCopy } from '../lib/useCopy.js';
-import { stripCommandTags } from '../lib/markdown.js';
+import Markdown from '../lib/markdownRender';
+import { formatDate, shortModel, formatTokens } from '../lib/format';
+import { useCopy } from '../lib/useCopy';
+import { stripCommandTags } from '../lib/markdown';
 
 const ICON_SIZE = 16;
 const SMALL_ICON_SIZE = 14;
 const PREVIEW_MAX = 48;
 const RESULT_MAX = 6000;
 
+/** An icon component from the skateboard-ui icon set. */
+type IconComponent = (props: IconProps) => ReactElement;
+
+/** A paired tool call: its input plus the result that came back. */
+interface ToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  result: string | null;
+  isError: boolean;
+}
+
+/** One renderable item inside an assistant turn: prose text or a tool call. */
+type AssistantItem =
+  | { kind: 'text'; text: string }
+  | { kind: 'tool'; tool: ToolCall };
+
+/** Token-usage block from a Claude Code assistant record. */
+interface Usage {
+  output_tokens?: number;
+}
+
+/** A derived chat message ready to render in the transcript. */
+type Message =
+  | { role: 'system'; text: string; timestamp?: string }
+  | { role: 'user'; text: string; timestamp?: string }
+  | {
+      role: 'assistant';
+      thinking: string;
+      items: AssistantItem[];
+      model: string;
+      usage: Usage | null;
+      timestamp?: string;
+    };
+
+/** A raw Claude Code JSONL record (loosely typed — shapes vary by `type`). */
+interface RawRecord {
+  type?: string;
+  timestamp?: string;
+  content?: unknown;
+  message?: {
+    content?: unknown;
+    model?: string;
+    usage?: Usage | null;
+  };
+}
+
+/** Session metadata passed alongside the records (not required for layout). */
+type TranscriptMeta = object;
+
 // Tool name -> icon. Names not listed fall back to a generic wrench.
-const TOOL_ICONS = {
+const TOOL_ICONS: Record<string, IconComponent> = {
   Bash: Terminal,
   Read: FileText,
   Edit: FilePen,
@@ -40,7 +92,7 @@ const TOOL_ICONS = {
 const PREVIEW_KEYS = ['command', 'query', 'url', 'path', 'file_path', 'pattern', 'name'];
 
 /** Coerce arbitrary tool-result/text content into a printable string. */
-function stringifyContent(content) {
+function stringifyContent(content: unknown): string {
   if (content == null) return '';
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
@@ -56,7 +108,7 @@ function stringifyContent(content) {
 }
 
 /** Pick a short, single-line preview string from a tool's input object. */
-function toolPreview(input) {
+function toolPreview(input: Record<string, unknown> | null | undefined): string {
   if (!input || typeof input !== 'object') return '';
   for (const key of PREVIEW_KEYS) {
     const value = input[key];
@@ -78,7 +130,7 @@ function toolPreview(input) {
  * fallback (a `<pre>`) already renders non-markdown results cleanly, so a false
  * negative here is harmless while a false positive corrupts the output.
  */
-function looksLikeMarkdown(text) {
+function looksLikeMarkdown(text: string): boolean {
   if (!text) return false;
   return /```|~~~|^#{1,6}\s+\S|\[[^\]]+\]\([^)\s]+\)|\|\s*:?-{2,}/m.test(text);
 }
@@ -88,25 +140,24 @@ function looksLikeMarkdown(text) {
  * pairing each `tool_use` block with the `tool_result` that carries its output
  * so input + result render in a single pill (mirroring Claude / ChatGPT).
  *
- * @param {Array<object>} records - Raw records, in chronological order.
- * @returns {Array<object>} Ordered messages:
- *   `{ role:'system', text, timestamp }`,
- *   `{ role:'user', text, timestamp }`,
- *   `{ role:'assistant', thinking, items:[{kind:'text',text}|{kind:'tool',tool}],
- *      model, usage, timestamp }`.
- *   Each tool item's `tool` is `{ id, name, input, result, isError }`.
+ * The raw block shapes vary by Claude Code version, so individual content
+ * blocks are read loosely (`any`) while the returned {@link Message} list is
+ * strongly typed.
+ *
+ * @param records - Raw records, in chronological order.
+ * @returns Ordered, ready-to-render chat messages.
  */
-function deriveMessages(records) {
-  const messages = [];
-  const toolsById = new Map();
+function deriveMessages(records: RawRecord[]): Message[] {
+  const messages: Message[] = [];
+  const toolsById = new Map<string, ToolCall>();
 
   for (const record of Array.isArray(records) ? records : []) {
     const type = record?.type;
 
     if (type === 'assistant') {
-      const blocks = Array.isArray(record?.message?.content) ? record.message.content : [];
-      const thinkingParts = [];
-      const items = [];
+      const blocks: any[] = Array.isArray(record?.message?.content) ? record.message!.content as any[] : [];
+      const thinkingParts: string[] = [];
+      const items: AssistantItem[] = [];
 
       for (const block of blocks) {
         if (block?.type === 'thinking' || block?.type === 'redacted_thinking') {
@@ -115,7 +166,7 @@ function deriveMessages(records) {
         } else if (block?.type === 'text') {
           if (block.text) items.push({ kind: 'text', text: block.text });
         } else if (block?.type === 'tool_use') {
-          const tool = {
+          const tool: ToolCall = {
             id: block.id ?? `tool-${items.length}`,
             name: block.name ?? 'tool',
             input: block.input ?? {},
@@ -151,8 +202,8 @@ function deriveMessages(records) {
 
       // Array content carries tool results (attach, no user turn) plus any
       // stray text blocks (which DO count as a user message).
-      const blocks = Array.isArray(content) ? content : [];
-      const userTextParts = [];
+      const blocks: any[] = Array.isArray(content) ? content : [];
+      const userTextParts: string[] = [];
 
       for (const block of blocks) {
         if (block?.type === 'tool_result') {
@@ -163,7 +214,7 @@ function deriveMessages(records) {
             existing.isError = Boolean(block.is_error);
           } else {
             // Orphaned result — surface it via a synthetic tool so nothing is lost.
-            const synthetic = {
+            const synthetic: Message = {
               role: 'assistant',
               thinking: '',
               items: [
@@ -216,14 +267,14 @@ function deriveMessages(records) {
 }
 
 /** Centered, muted system notice. */
-function MessageSystem({ text }) {
+function MessageSystem({ text }: { text: string }) {
   return (
     <div className="px-4 text-center text-copy-sm italic text-muted-foreground [content-visibility:auto] [contain-intrinsic-size:auto_32px]">{text}</div>
   );
 }
 
 /** Right-aligned user prompt bubble with a timestamp beneath it. */
-function MessageUser({ text, timestamp }) {
+function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) {
   return (
     <div className="flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
       <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 leading-relaxed text-foreground sm:max-w-[36rem]">
@@ -237,7 +288,7 @@ function MessageUser({ text, timestamp }) {
 }
 
 /** Collapsed-by-default disclosure for the assistant's thinking trace. */
-function ThinkingDisclosure({ text }) {
+function ThinkingDisclosure({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col gap-2">
@@ -265,18 +316,18 @@ function ThinkingDisclosure({ text }) {
 }
 
 /** Expandable capsule showing one tool call's input and (when present) result. */
-function ToolPill({ tool }) {
+function ToolPill({ tool }: { tool: ToolCall }) {
   const { name, input, result, isError } = tool;
   const [open, setOpen] = useState(isError);
   const ToolIcon = TOOL_ICONS[name] ?? Wrench;
   const label = String(name).replace(/_/g, ' ');
   const preview = toolPreview(input);
   const hasResult = result != null && result !== '';
-  const resultText = hasResult
-    ? result.length > RESULT_MAX
+  const resultText = !hasResult || result == null
+    ? ''
+    : result.length > RESULT_MAX
       ? `${result.slice(0, RESULT_MAX)}\n… (truncated)`
-      : result
-    : '';
+      : result;
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -343,7 +394,7 @@ function ToolPill({ tool }) {
 }
 
 /** Muted action row beneath an assistant message: copy + model/token meta. */
-function AssistantActions({ text, model, usage }) {
+function AssistantActions({ text, model, usage }: { text: string; model: string; usage: Usage | null }) {
   const { copied, copy } = useCopy();
   const CopyIcon = copied ? Check : Copy;
   const tokens = usage?.output_tokens;
@@ -371,11 +422,14 @@ function AssistantActions({ text, model, usage }) {
   );
 }
 
+/** The assistant variant of {@link Message}. */
+type AssistantMessage = Extract<Message, { role: 'assistant' }>;
+
 /** Full-width, no-bubble assistant turn: identity, thinking, content, actions. */
-function MessageAssistant({ message }) {
+function MessageAssistant({ message }: { message: AssistantMessage }) {
   const { thinking, items, model, usage, timestamp } = message;
   const assistantText = items
-    .filter((item) => item.kind === 'text')
+    .filter((item): item is Extract<AssistantItem, { kind: 'text' }> => item.kind === 'text')
     .map((item) => item.text)
     .join('\n\n');
 
@@ -409,6 +463,14 @@ function MessageAssistant({ message }) {
   );
 }
 
+/** Props for {@link Transcript}. */
+interface TranscriptProps {
+  /** Raw Claude Code records, in order. */
+  records: RawRecord[];
+  /** Session metadata (not required for layout). */
+  meta?: TranscriptMeta;
+}
+
 /**
  * Read-only chat-style renderer for a Claude Code session transcript.
  * Derives a message model from raw JSONL records (pairing tool calls with
@@ -417,12 +479,9 @@ function MessageAssistant({ message }) {
  * and expandable tool pills. Does no fetching; the parent owns loading / error
  * / empty states above this component.
  *
- * @param {object} props
- * @param {Array<object>} props.records - Raw Claude Code records, in order.
- * @param {object} [props.meta] - Session metadata (not required for layout).
- * @returns {JSX.Element|null} The transcript, or null when there are no records.
+ * @returns The transcript, or null when there are no records.
  */
-export default function Transcript({ records, meta }) {
+export default function Transcript({ records, meta }: TranscriptProps) {
   void meta; // accepted for a stable caller signature; layout needs only records
   // Derive once per records change — deriveMessages walks every record and the
   // children re-parse markdown, so re-running it on unrelated re-renders (search

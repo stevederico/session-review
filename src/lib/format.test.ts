@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCost, formatTokens, relativeTime, shortModel } from './format.js';
+import { formatCost, formatTokens, relativeTime, shortModel } from './format.ts';
 
 test('formatCost compacts thousands', () => {
   assert.equal(formatCost(1500), '$1.5k');

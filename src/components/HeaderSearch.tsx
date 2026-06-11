@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 import Search from '@stevederico/skateboard-ui/icons/Search';
 import X from '@stevederico/skateboard-ui/icons/X';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
@@ -7,19 +8,31 @@ import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import { Input } from '@stevederico/skateboard-ui/shadcn/ui/input';
 import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
-import { relativeTime } from '../lib/format.js';
+import { relativeTime } from '../lib/format';
 
 /** Debounce delay (ms) before firing a search request. */
 const SEARCH_DEBOUNCE_MS = 300;
+
+/** One row from the `/cc/search` endpoint. */
+interface SearchResult {
+  /** Session id, handed to `onSelect` when the row is opened. */
+  id: string;
+  name?: string;
+  project?: string;
+  role: string;
+  ts: string;
+  /** Snippet with matched terms wrapped in `[` and `]`. */
+  snippet: string;
+}
 
 /**
  * Split a backend snippet on its literal `[`/`]` match delimiters and render the
  * bracketed spans as highlighted <mark>s, leaving the rest as plain text.
  *
- * @param {string} snippet - Snippet string with matched terms wrapped in `[` and `]`.
- * @returns {Array<JSX.Element>} React nodes for the highlighted snippet.
+ * @param snippet - Snippet string with matched terms wrapped in `[` and `]`.
+ * @returns React nodes for the highlighted snippet.
  */
-function renderSnippet(snippet) {
+function renderSnippet(snippet: string | null | undefined) {
   const text = snippet ?? '';
   const parts = text.split(/\[([^\]]*)\]/g);
   return parts.map((part, i) =>
@@ -34,20 +47,23 @@ function renderSnippet(snippet) {
   );
 }
 
+/** Props for a single {@link ResultRow}. */
+interface ResultRowProps {
+  /** One row from /cc/search. */
+  result: SearchResult;
+  /** Called with the result when activated. */
+  onOpen: (result: SearchResult) => void;
+}
+
 /**
  * A single search result row inside the dropdown. Clickable/keyboard-activatable
  * to open the matching conversation.
- *
- * @param {Object} props
- * @param {Object} props.result - One row from /cc/search.
- * @param {Function} props.onOpen - Called with the result when activated.
- * @returns {JSX.Element}
  */
-function ResultRow({ result, onOpen }) {
+function ResultRow({ result, onOpen }: ResultRowProps) {
   const { name, project, role, ts, snippet } = result;
   const label = name || project || 'conversation';
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onOpen(result);
@@ -78,26 +94,29 @@ function ResultRow({ result, onOpen }) {
   );
 }
 
+/** Props for {@link HeaderSearch}. */
+interface HeaderSearchProps {
+  /** Called with a session id when a result is chosen. */
+  onSelect?: (id: string) => void;
+  /** Extra classes for the wrapper. */
+  className?: string;
+}
+
 /**
  * Global conversation search that lives in the top bar. Debounces the query,
  * hits /cc/search, and shows matches in a dropdown; selecting a result hands its
  * session id to `onSelect` so the host view can open it in place.
- *
- * @param {Object} props
- * @param {Function} props.onSelect - Called with a session id when a result is chosen.
- * @param {string} [props.className] - Extra classes for the wrapper.
- * @returns {JSX.Element}
  */
-export default function HeaderSearch({ onSelect, className }) {
+export default function HeaderSearch({ onSelect, className }: HeaderSearchProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  const wrapperRef = useRef(null);
-  const inputRef = useRef(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounce the raw query into debouncedQuery.
   useEffect(() => {
@@ -106,7 +125,7 @@ export default function HeaderSearch({ onSelect, className }) {
   }, [query]);
 
   // Run the search whenever the debounced query changes.
-  const runSearch = useCallback(async (q) => {
+  const runSearch = useCallback(async (q: string) => {
     if (!q) {
       setResults([]);
       setError(null);
@@ -116,7 +135,7 @@ export default function HeaderSearch({ onSelect, className }) {
     setLoading(true);
     setError(null);
     try {
-      const rows = await apiRequestWithParams('/cc/search', { q });
+      const rows = await apiRequestWithParams<SearchResult[]>('/cc/search', { q });
       setResults(Array.isArray(rows) ? rows : []);
     } catch (err) {
       console.error('Search failed', err);
@@ -133,8 +152,8 @@ export default function HeaderSearch({ onSelect, className }) {
 
   // Close the dropdown on outside click.
   useEffect(() => {
-    const handleClick = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+    const handleClick = (e: PointerEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -142,7 +161,7 @@ export default function HeaderSearch({ onSelect, className }) {
     return () => document.removeEventListener('pointerdown', handleClick);
   }, []);
 
-  const handleQueryChange = (e) => {
+  const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
     setOpen(true);
   };
@@ -153,14 +172,14 @@ export default function HeaderSearch({ onSelect, className }) {
     inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       if (query) handleClear();
       else setOpen(false);
     }
   };
 
-  const handleOpenResult = (result) => {
+  const handleOpenResult = (result: SearchResult) => {
     onSelect?.(result.id);
     setOpen(false);
   };

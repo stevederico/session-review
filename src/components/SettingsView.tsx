@@ -19,7 +19,7 @@ import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
  * `overrides.settings` in {@link module:main}, replacing the shell's default
  * SettingsView while still rendering it inline so nothing is lost.
  *
- * @returns {JSX.Element} The settings view.
+ * @returns The settings view.
  */
 export default function SettingsView() {
   const [isReindexing, setIsReindexing] = useState(false);
@@ -30,7 +30,10 @@ export default function SettingsView() {
     setIsReindexing(true);
     setStatus('');
     try {
-      const result = await apiRequest('/cc/reindex', { method: 'POST' });
+      const result = await apiRequest<{ files?: number; changed?: number }>(
+        '/cc/reindex',
+        { method: 'POST' },
+      );
       const files = result?.files ?? 0;
       const changed = result?.changed ?? 0;
       setStatus(`Reindexed ${files} file${files === 1 ? '' : 's'}, ${changed} changed.`);
