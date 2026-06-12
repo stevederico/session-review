@@ -2,6 +2,10 @@
 
 ## 0.17.0
 
+  Update skateboard 3.14.0
+  Update skateboard-ui 4.3.0
+  Migrate Select API
+  Refresh backend server
   Move refresh to settings
   Add transcripts reindex card
   Pin version to bottom

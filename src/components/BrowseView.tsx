@@ -331,17 +331,13 @@ export default function BrowseView() {
             <Select
               value={selectedProject}
               onValueChange={handleSelectProject}
-              disabled={projectsLoading || !!projectsError}
             >
-              <SelectTrigger className="w-full" aria-label="Filter by project">
-                <SelectValue placeholder="Select a project">
-                  {(value) => {
-                    if (!value) return 'Select a project';
-                    if (value === ALL_PROJECTS) return 'All projects';
-                    const p = projects.find((proj) => proj.project === value);
-                    return p ? `${p.name} (${p.sessions})` : value;
-                  }}
-                </SelectValue>
+              <SelectTrigger
+                className="w-full"
+                aria-label="Filter by project"
+                disabled={projectsLoading || !!projectsError}
+              >
+                <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
@@ -355,9 +351,7 @@ export default function BrowseView() {
 
             <Select value={sessionSort} onValueChange={(value) => setSessionSort(value ?? 'recent')}>
               <SelectTrigger className="w-full" aria-label="Sort projects and conversations by" size="sm">
-                <SelectValue placeholder="Sort by">
-                  {(value) => `Sort: ${SESSION_SORTS.find((s) => s.value === value)?.label ?? value}`}
-                </SelectValue>
+                <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
                 {SESSION_SORTS.map((s) => (
@@ -472,13 +466,7 @@ export default function BrowseView() {
                     onValueChange={handleTagProject}
                   >
                     <SelectTrigger className="w-56" aria-label="Assign this conversation to a project" size="sm">
-                      <SelectValue>
-                        {(value) => {
-                          if (!value || value === AUTO_DETECT) return 'Auto-detect';
-                          const p = projects.find((proj) => proj.project === value);
-                          return p ? p.name : (detailMeta?.project_name ?? value);
-                        }}
-                      </SelectValue>
+                      <SelectValue placeholder={detailMeta?.project_name ?? 'Auto-detect'} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={AUTO_DETECT}>Auto-detect (clear)</SelectItem>
