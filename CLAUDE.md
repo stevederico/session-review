@@ -20,7 +20,7 @@ npm install-all        # Install all dependencies (root + workspace)
 
 **Testing:**
 ```bash
-npm run test           # Run all tests (vitest run)
+npm run test           # Run all tests (node --test, backend workspace)
 npm run test:watch     # Watch mode for development
 ```
 
@@ -89,8 +89,8 @@ When making ANY code changes, you MUST update:
 ### TypeScript Style
 
 - TypeScript everywhere — `.ts` / `.tsx` files, `strict` mode always on
+- No build-step typechecking: `npm run typecheck` runs `tsc --noEmit` for both root and backend; it gates `build`, `prod`, and `test`
 - `@types` packages are dev-only dependencies (`@types/node`, `@types/react`, `@types/react-dom`)
-- No build-step typechecking: `npm run typecheck` runs `tsc --noEmit`; it gates `build` and `test`
 - Prefer `const` over `let` — use `let` only when reassigning
 - Prefer `async`/`await` over `.then()` chains
 - Prefer destructuring: `const { id } = user` over `const id = user.id`
@@ -109,11 +109,13 @@ All of these silence the compiler instead of proving correctness:
 - Never use `as` casts to silence errors (especially `as unknown as X`) — prove the type instead
 - Never use `!` non-null assertions — handle the null/undefined case
 - Never use `@ts-ignore` — if truly unavoidable, use `@ts-expect-error` with a reason comment (it fails when the error goes away)
+- Never use `@ts-nocheck` — it disables type checking for the entire file; stronger than `@ts-ignore` and equally prohibited
 - Never disable or loosen `strict` in tsconfig
 - Never use loose built-in types (`Function`, `object`, `{}`) — write precise signatures and shapes
 - Never cast unvalidated data at boundaries — no `JSON.parse(x) as User` without a runtime check
 
 ### Prohibited Tools & Practices
+
 - Never use dotenv — manually load `.env` file
 - Never use `require()` — ES modules only
 - Never use mongoose — use the `mongodb` npm package
@@ -284,8 +286,8 @@ When a project uses `constants.json`, include a `design` block:
 
 ### Test Runner
 
-- **Vitest** is the standard test runner — never use Jest, Mocha, or Jasmine
-- Config lives in `vite.config.ts` under `test` key
+- **Node's built-in test runner** (`node --test`) is the standard — never use Jest, Mocha, or Jasmine; no test framework dependency
+- Backend tests run via the workspace: root `npm run test` typechecks, then delegates to `backend` (`node --test server.test.ts`)
 - Use `npm run test` for CI; `npm run test:watch` for development
 
 ### What to Test
@@ -303,16 +305,17 @@ When a project uses `constants.json`, include a `design` block:
 ### Test Structure
 
 ```javascript
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 
 describe('fetchUser', () => {
   it('returns user object for valid id', async () => {
     const user = await fetchUser('123');
-    expect(user).toHaveProperty('id', '123');
+    assert.equal(user.id, '123');
   });
 
   it('throws on non-existent id', async () => {
-    await expect(fetchUser('bad')).rejects.toThrow('Not found');
+    await assert.rejects(fetchUser('bad'), /Not found/);
   });
 });
 ```
@@ -383,7 +386,7 @@ Skateboard uses an **Application Shell Architecture** where skateboard-ui provid
 ```
 skateboard/
 ├── src/
-│   ├── components/       # Your custom components (e.g., HomeView.jsx)
+│   ├── components/       # Your custom components (e.g., HomeView.tsx)
 │   ├── assets/
 │   │   └── styles.css   # Brand color override (7 lines)
 │   ├── main.tsx         # Route definitions (16 lines)
@@ -392,8 +395,10 @@ skateboard/
 │   ├── server.ts        # Hono server
 │   ├── adapters/        # Database adapters (SQLite, PostgreSQL, MongoDB)
 │   ├── databases/       # SQLite database files
+│   ├── tsconfig.json    # Backend TypeScript config
 │   └── config.json      # Backend config with database settings
 ├── package.json         # Dependencies (includes skateboard-ui)
+├── tsconfig.json        # Frontend TypeScript config (strict)
 └── vite.config.ts       # Vite configuration (app-owned)
 ```
 
@@ -618,8 +623,8 @@ When working with these libraries, consult the provided documentation before mak
 **Reference:** [docs/GUIDE.md](docs/GUIDE.md) - Architecture, API, Schema, Deployment, Migration (consolidated)
 
 **Version:**
-- skateboard@3.4.0
-- skateboard-ui@3.7.0
+- skateboard@3.10.0
+- skateboard-ui@4.3.0
 
 ## Updating from Skateboard Boilerplate
 
