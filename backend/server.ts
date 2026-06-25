@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { readFile, mkdir, stat, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { promisify } from 'node:util';
 import type { BackendConfig, BoundDatabase, CsrfTokenEntry, DatabaseConfig, JwtPayload, Logger, Subscription, UserSetFields } from './types.ts';
+import * as cc from './cc-index.js';
 
 /** Hono context environment: authMiddleware sets userID for downstream middleware/handlers. */
 type AppEnv = { Variables: { userID: string } };
@@ -1465,6 +1466,92 @@ app.post("/api/portal", authMiddleware, csrfProtection, async (c) => {
   } catch (e) {
     logger.error('Portal session error', { error: (e as Error).message });
     return c.json({ error: "Stripe portal failed" }, 500);
+  }
+});
+
+// ==== CC REVIEW API (Claude Code transcript indexer) ====
+// Mounted under /api/cc/* to match frontend apiRequest calls (devBackendURL + /cc/*).
+// These are read-mostly local indexer endpoints; no auth required (noLogin: true in constants).
+
+/** GET /api/cc/projects — list projects (aggregated sessions by canonical cwd) */
+app.get('/api/cc/projects', async (c) => {
+  try {
+    return c.json(cc.projects());
+  } catch (e: any) {
+    logger.error('cc/projects failed', { error: e?.message });
+    return c.json({ error: 'Failed to load projects' }, 500);
+  }
+});
+
+/** GET /api/cc/sessions?project=... — list sessions, optionally filtered */
+app.get('/api/cc/sessions', async (c) => {
+  try {
+    const project = c.req.query('project') || undefined;
+    return c.json(cc.sessions(project));
+  } catch (e: any) {
+    logger.error('cc/sessions failed', { error: e?.message });
+    return c.json({ error: 'Failed to load sessions' }, 500);
+  }
+});
+
+/** GET /api/cc/session/:id — full session meta + raw transcript records (read fresh) */
+app.get('/api/cc/session/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const data = cc.session(id);
+    if (!data) return c.json({ error: 'Session not found' }, 404);
+    return c.json(data);
+  } catch (e: any) {
+    logger.error('cc/session failed', { error: e?.message });
+    return c.json({ error: 'Failed to load session' }, 500);
+  }
+});
+
+/** GET /api/cc/search?q=...&project=... — FTS5 search over message bodies */
+app.get('/api/cc/search', async (c) => {
+  try {
+    const q = c.req.query('q') || '';
+    const project = c.req.query('project') || undefined;
+    const limit = parseInt(c.req.query('limit') || '100', 10);
+    return c.json(cc.search(q, project, limit));
+  } catch (e: any) {
+    logger.error('cc/search failed', { error: e?.message });
+    return c.json({ error: 'Search failed' }, 500);
+  }
+});
+
+/** GET /api/cc/stats — aggregates for analytics (totals + byProject/byModel/byDay) */
+app.get('/api/cc/stats', async (c) => {
+  try {
+    return c.json(cc.stats());
+  } catch (e: any) {
+    logger.error('cc/stats failed', { error: e?.message });
+    return c.json({ error: 'Failed to load stats' }, 500);
+  }
+});
+
+/** POST /api/cc/tag — manually assign (or clear) a session's project override */
+app.post('/api/cc/tag', async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const { id, project } = body || {};
+    if (!id) return c.json({ error: 'id required' }, 400);
+    const result = cc.setOverride(id, project ?? null);
+    return c.json(result);
+  } catch (e: any) {
+    logger.error('cc/tag failed', { error: e?.message });
+    return c.json({ error: 'Failed to tag session' }, 500);
+  }
+});
+
+/** POST /api/cc/reindex — force full re-scan (used by Settings > Transcripts Refresh) */
+app.post('/api/cc/reindex', async (c) => {
+  try {
+    const result = cc.reindex(true);
+    return c.json(result);
+  } catch (e: any) {
+    logger.error('cc/reindex failed', { error: e?.message });
+    return c.json({ error: 'Reindex failed' }, 500);
   }
 });
 
