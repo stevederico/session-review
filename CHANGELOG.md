@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0
+
+  Add cc API
+  Mount indexer endpoints
+  Add search route
+  Add reindex route
+
 ## 0.17.0
 
   Update skateboard 3.14.0
