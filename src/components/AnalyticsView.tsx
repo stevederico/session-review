@@ -507,11 +507,7 @@ export default function AnalyticsView() {
           <h2 className="text-heading-md">Projects</h2>
           <Select value={projectSort} onValueChange={(value) => setProjectSort(value ?? 'cost')}>
             <SelectTrigger className="w-40" aria-label="Sort projects by" size="sm">
-              <SelectValue placeholder="Sort by">
-                {(value) =>
-                  PROJECT_SORTS.find((s) => s.value === value)?.label ?? value
-                }
-              </SelectValue>
+              <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
               {PROJECT_SORTS.map((s) => (
