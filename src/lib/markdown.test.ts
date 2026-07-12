@@ -3,14 +3,21 @@ import assert from 'node:assert/strict';
 import { parseMarkdown, parseInline, stripCommandTags } from './markdown.ts';
 import type { ListBlock, ListItem } from './markdown.ts';
 
+/** Type guard: block token is a list. */
+function isListBlock(token: unknown): token is ListBlock {
+  return typeof token === 'object' && token !== null && 'type' in token && token.type === 'list';
+}
+
 /** Narrow a block token to a list block for assertions on list-only fields. */
 function asList(token: unknown): ListBlock {
-  return token as ListBlock;
+  assert.ok(isListBlock(token), 'expected list block');
+  return token;
 }
 
 /** Narrow a list item's nested sub-list (asserted non-null by the caller). */
 function asNestedList(item: ListItem): ListBlock {
-  return item.children as ListBlock;
+  assert.ok(item.children !== null, 'expected nested list');
+  return item.children;
 }
 
 test('stripCommandTags removes paired command meta tags with their content', () => {
