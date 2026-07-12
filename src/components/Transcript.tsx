@@ -72,6 +72,31 @@ interface RawRecord {
   };
 }
 
+/** One content block inside a message (shape varies by Claude Code version). */
+interface ContentBlock {
+  type?: string;
+  thinking?: string;
+  text?: string;
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+  content?: unknown;
+  tool_use_id?: string;
+  is_error?: boolean;
+}
+
+function isContentBlock(v: unknown): v is ContentBlock {
+  return typeof v === 'object' && v !== null;
+}
+
+function isRawRecord(v: unknown): v is RawRecord {
+  return typeof v === 'object' && v !== null;
+}
+
+function contentBlocks(content: unknown): ContentBlock[] {
+  return Array.isArray(content) ? content.filter(isContentBlock) : [];
+}
+
 /** Session metadata passed alongside the records (not required for layout). */
 type TranscriptMeta = object;
 
@@ -141,21 +166,23 @@ function looksLikeMarkdown(text: string): boolean {
  * so input + result render in a single pill (mirroring Claude / ChatGPT).
  *
  * The raw block shapes vary by Claude Code version, so individual content
- * blocks are read loosely (`any`) while the returned {@link Message} list is
+ * blocks are read via a loose {@link ContentBlock} shape while the returned {@link Message} list is
  * strongly typed.
  *
  * @param records - Raw records, in chronological order.
  * @returns Ordered, ready-to-render chat messages.
  */
-function deriveMessages(records: RawRecord[]): Message[] {
+function deriveMessages(records: unknown[]): Message[] {
   const messages: Message[] = [];
   const toolsById = new Map<string, ToolCall>();
 
-  for (const record of Array.isArray(records) ? records : []) {
+  for (const raw of Array.isArray(records) ? records : []) {
+    if (!isRawRecord(raw)) continue;
+    const record = raw;
     const type = record?.type;
 
     if (type === 'assistant') {
-      const blocks: any[] = Array.isArray(record?.message?.content) ? record.message!.content as any[] : [];
+      const blocks = contentBlocks(record?.message?.content);
       const thinkingParts: string[] = [];
       const items: AssistantItem[] = [];
 
@@ -202,7 +229,7 @@ function deriveMessages(records: RawRecord[]): Message[] {
 
       // Array content carries tool results (attach, no user turn) plus any
       // stray text blocks (which DO count as a user message).
-      const blocks: any[] = Array.isArray(content) ? content : [];
+      const blocks = contentBlocks(content);
       const userTextParts: string[] = [];
 
       for (const block of blocks) {
@@ -466,7 +493,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
 /** Props for {@link Transcript}. */
 interface TranscriptProps {
   /** Raw Claude Code records, in order. */
-  records: RawRecord[];
+  records: unknown[];
   /** Session metadata (not required for layout). */
   meta?: TranscriptMeta;
 }

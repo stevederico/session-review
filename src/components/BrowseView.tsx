@@ -72,7 +72,7 @@ interface SessionMetaData {
 interface SessionDetail {
   meta?: SessionMetaData;
   /** Raw Claude Code JSONL records, passed straight to {@link Transcript}. */
-  records: any[];
+  records: unknown[];
 }
 
 /** Sentinel value for the "All projects" Select option (no project filter). */

@@ -153,7 +153,7 @@ export default function HeaderSearch({ onSelect, className }: HeaderSearchProps)
   // Close the dropdown on outside click.
   useEffect(() => {
     const handleClick = (e: PointerEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && e.target instanceof Node && !wrapperRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
