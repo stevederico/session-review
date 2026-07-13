@@ -8,6 +8,7 @@
   Resume by agent source
   Rebrand Session Review
   Update settings reindex copy
+  Rename package session-review
 
 ## 0.18.0
 

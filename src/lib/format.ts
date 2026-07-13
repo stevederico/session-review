@@ -68,7 +68,7 @@ export function shortModel(model: string | null | undefined): string {
 }
 
 /**
- * Working-folder name for a session, e.g. `cc-review`.
+ * Working-folder name for a session, e.g. `session-review`.
  *
  * Prefers the real `cwd` basename — it preserves dashes in the folder name,
  * which the dash-encoded `project` key cannot distinguish from path

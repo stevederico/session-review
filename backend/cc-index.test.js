@@ -199,7 +199,7 @@ test('costOf prices 1M sonnet output tokens', () => {
 test('canonicalProject uses the cwd basename for a plain repo', () => {
   assert.deepEqual(
     canonicalProject('/Users/dev/projects/session-review'),
-    { key: '/Users/dev/projects/session-review', name: 'cc-review' }
+    { key: '/Users/dev/projects/session-review', name: 'session-review' }
   );
 });
 
