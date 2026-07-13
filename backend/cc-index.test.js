@@ -71,7 +71,7 @@ test('toIso prefers agentTimestampMs', () => {
 
 test('decodeGrokCwd URL-decodes the group folder name', () => {
   assert.equal(
-    decodeGrokCwd('%2FUsers%2Fsd%2FDesktop%2Fprojects', tmpdir()),
+    decodeGrokCwd('%2FUsers%2Fdev%2Fprojects', tmpdir()),
     '/Users/dev/projects',
   );
 });
@@ -206,7 +206,7 @@ test('canonicalProject uses the cwd basename for a plain repo', () => {
 test('canonicalProject folds a git worktree into its parent repo', () => {
   assert.deepEqual(
     canonicalProject('/Users/dev/projects/demo-app/.claude/worktrees/crazy-johnson-a99b2c'),
-    { key: '/Users/dev/projects/demo-app', name: 'dottie-desktop' }
+    { key: '/Users/dev/projects/demo-app', name: 'demo-app' }
   );
 });
 
@@ -218,12 +218,12 @@ test('canonicalProject folds a dash-encoded worktree folder name', () => {
 test('canonicalProject prefers cwd over the encoded project fallback', () => {
   assert.equal(
     canonicalProject('/Users/dev/projects/demo-app', '-Users-dev-projects-demo-app').name,
-    'onyx'
+    'demo-app'
   );
 });
 
 test('canonicalProject strips a trailing slash', () => {
-  assert.equal(canonicalProject('/Users/dev/projects/demo-app/').name, 'onyx');
+  assert.equal(canonicalProject('/Users/dev/projects/demo-app/').name, 'demo-app');
 });
 
 test('isConversational counts a typed user prompt (string content)', () => {
@@ -262,20 +262,20 @@ test('resolveProject honors a manual override', () => {
   const overrides = new Map([['abc', '/Users/dev/projects/other-app']]);
   assert.deepEqual(
     resolveProject({ id: 'abc', cwd: '/Users/dev/projects' }, overrides),
-    { key: '/Users/dev/projects/other-app', name: 'fund-admin' }
+    { key: '/Users/dev/projects/other-app', name: 'other-app' }
   );
 });
 
 test('resolveProject falls back to canonical project when unset', () => {
   assert.equal(
     resolveProject({ id: 'xyz', cwd: '/Users/dev/projects/demo-app' }, new Map()).name,
-    'onyx'
+    'demo-app'
   );
 });
 
 test('resolveProject works without an overrides map', () => {
   assert.equal(
     resolveProject({ id: 'x', cwd: '/Users/dev/projects/demo-app' }).name,
-    'onyx'
+    'demo-app'
   );
 });

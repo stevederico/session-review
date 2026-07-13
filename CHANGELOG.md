@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0
+
+  Drop skateboard scaffold junk
+  Trim constants marketing copy
+  Sanitize test fixture paths
+  Keep auth backend intact
+
 ## 0.20.0
 
   Prefer coding-agent wording

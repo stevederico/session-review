@@ -620,7 +620,7 @@ When working with these libraries, consult the provided documentation before mak
 
 ## Documentation
 
-**Reference:** [docs/GUIDE.md](docs/GUIDE.md) - Architecture, API, Schema, Deployment, Migration (consolidated)
+**Reference:** [README.md](README.md) - App overview, features, architecture
 
 **Version:**
 - skateboard@4.11.0
