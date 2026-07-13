@@ -25,7 +25,7 @@ export default function SettingsView() {
   const [isReindexing, setIsReindexing] = useState(false);
   const [status, setStatus] = useState('');
 
-  /** Force a full backend re-scan of Claude + Grok sessions and report the result. */
+  /** Force a full backend re-scan of coding-agent sessions and report the result. */
   const handleRefresh = async () => {
     setIsReindexing(true);
     setStatus('');

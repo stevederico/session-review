@@ -1,6 +1,6 @@
 /**
  * Type declarations for the multi-source session indexer (`cc-index.js`).
- * Supports Claude Code (~/.claude/projects) and Grok CLI (~/.grok/sessions).
+ * Supports coding agents: claude (~/.claude/projects) and grok (~/.grok/sessions).
  */
 
 /** Pricing per 1M tokens (USD) for a model family. */

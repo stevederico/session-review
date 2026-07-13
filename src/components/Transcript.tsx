@@ -60,7 +60,7 @@ type Message =
       timestamp?: string;
     };
 
-/** A raw transcript record (Claude JSONL or Grok-normalized; shapes vary by `type`). */
+/** A raw transcript record (claude JSONL or grok-normalized; shapes vary by `type`). */
 interface RawRecord {
   type?: string;
   timestamp?: string;
@@ -101,7 +101,7 @@ function contentBlocks(content: unknown): ContentBlock[] {
 type TranscriptMeta = object;
 
 // Tool name -> icon. Names not listed fall back to a generic wrench.
-// Includes Claude Code tools and common Grok CLI tool names / variants.
+// Includes claude and grok tool names / variants.
 const TOOL_ICONS: Record<string, IconComponent> = {
   Bash: Terminal,
   Read: FileText,
@@ -176,7 +176,7 @@ function looksLikeMarkdown(text: string): boolean {
  * pairing each `tool_use` block with the `tool_result` that carries its output
  * so input + result render in a single pill.
  *
- * Claude Code records arrive as-is; Grok sessions are normalized by the
+ * Claude records arrive as-is; grok sessions are normalized by the
  * indexer into the same shape. Individual content blocks are read via a loose
  * {@link ContentBlock} shape while the returned {@link Message} list is strongly typed.
  *

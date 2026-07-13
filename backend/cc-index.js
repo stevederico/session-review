@@ -1,8 +1,8 @@
 /**
  * Local coding-agent session indexer.
  *
- * Indexes transcripts from Claude Code (`~/.claude/projects/*.jsonl`) and
- * Grok CLI (`~/.grok/sessions/<cwd>/<id>/`) into SQLite (metadata + FTS5).
+ * Indexes transcripts from coding agents — claude (`~/.claude/projects/*.jsonl`)
+ * and grok (`~/.grok/sessions/<cwd>/<id>/`) — into SQLite (metadata + FTS5).
  * Indexing is incremental by mtime. Full transcripts are read fresh on demand
  * and normalized to a shared record shape so the UI can render both sources.
  */
@@ -286,7 +286,7 @@ export function stringifyGrokOutput(u) {
 }
 
 /**
- * Normalize Grok `updates.jsonl` into Claude-shaped records the Transcript UI
+ * Normalize grok `updates.jsonl` into claude-shaped records the Transcript UI
  * already understands (`type: user|assistant` + content blocks).
  *
  * @param {string} sessionDir - Path to `~/.grok/sessions/<cwd>/<id>/`.
@@ -477,7 +477,7 @@ export function grokUpdatesToRecords(sessionDir) {
   return records;
 }
 
-/** Parse one Claude Code JSONL file into a session row + FTS rows. */
+/** Parse one claude JSONL file into a session row + FTS rows. */
 function parseClaudeFile(entry) {
   const path = entry.file;
   let lines;
@@ -683,7 +683,7 @@ function parseEntry(entry) {
   return entry.source === 'grok' ? parseGrokSession(entry) : parseClaudeFile(entry);
 }
 
-/** List Claude Code JSONL transcripts. */
+/** List claude JSONL transcripts. */
 function listClaudeFiles() {
   if (!existsSync(CLAUDE_DIR)) return [];
   const out = [];
@@ -710,7 +710,7 @@ function listClaudeFiles() {
   return out;
 }
 
-/** List Grok CLI session directories under ~/.grok/sessions. */
+/** List grok session directories under ~/.grok/sessions. */
 function listGrokFiles() {
   if (!existsSync(GROK_SESSIONS)) return [];
   const out = [];

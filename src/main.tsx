@@ -2,7 +2,7 @@
  * Application entry point (Skateboard Application Shell Architecture).
  *
  * Session Review is a local, read-only viewer for coding-agent transcripts
- * (Claude Code under ~/.claude/projects, Grok CLI under ~/.grok/sessions).
+ * (claude under ~/.claude/projects, grok under ~/.grok/sessions).
  * Two routes:
  *   - home      → Browse (projects → sessions → transcript), with global
  *                 full-text search merged into the top bar

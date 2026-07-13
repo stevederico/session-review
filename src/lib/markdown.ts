@@ -339,7 +339,7 @@ function parseList(lines: string[], start: number, baseIndent: number): { list: 
 }
 
 /**
- * Strip Claude Code slash-command meta tags from raw message text.
+ * Strip coding-agent slash-command meta tags from raw message text.
  *
  * Transcripts embed XML-like markers (`<command-message>`, `<command-name>`,
  * `<command-args>`, `<local-command-caveat>`, `<local-command-stdout>`, …) that

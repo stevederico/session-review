@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0
+
+  Prefer coding-agent wording
+  Name claude/grok only when needed
+
 ## 0.19.0
 
   Index Grok CLI sessions

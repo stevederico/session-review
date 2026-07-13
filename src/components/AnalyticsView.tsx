@@ -302,7 +302,7 @@ export default function AnalyticsView() {
             </EmptyMedia>
             <EmptyTitle>No usage yet</EmptyTitle>
             <EmptyDescription>
-              Once you have Claude Code or Grok CLI sessions, your usage and cost stats will appear here.
+              Once you have coding-agent sessions, your usage and cost stats will appear here.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

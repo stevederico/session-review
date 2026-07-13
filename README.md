@@ -1,11 +1,11 @@
 <div align="center">
   <h1>Session Review</h1>
-  <h3>browse, search, and analyze local coding-agent sessions — Claude Code + Grok CLI — react + hono + sqlite</h3>
+  <h3>browse, search, and analyze local coding-agent sessions — react + hono + sqlite</h3>
 </div>
 
 <br />
 
-Coding agents store every session as local transcripts — Claude Code under `~/.claude/projects`, Grok CLI under `~/.grok/sessions`. Session Review indexes them into SQLite and serves a fast browser for reading, full-text search, and usage/cost analytics. Everything stays on your machine.
+Coding agents store every session as local transcripts — claude under `~/.claude/projects`, grok under `~/.grok/sessions`. Session Review indexes them into SQLite and serves a fast browser for reading, full-text search, and usage/cost analytics. Everything stays on your machine.
 
 <br />
 
@@ -26,7 +26,7 @@ The backend scans both agent homes on first request (incremental by mtime therea
 
 ### 📂 **Browse**
 - **Master/detail viewer** — pick a project, pick a session, read the full transcript
-- **Multi-source** — Claude Code and Grok CLI sessions in one list (source badge + matching resume command)
+- **Multi-source** — claude and grok sessions in one list (source badge + matching resume command)
 - **Full-fidelity rendering** — user prompts, assistant markdown, collapsible thinking and tool-call blocks
 - **Per-session metadata** — model, git branch, message count, estimated cost
 
@@ -57,7 +57,7 @@ The backend scans both agent homes on first request (incremental by mtime therea
 
 ## 🏗️ Architecture
 
-The backend indexer (`backend/cc-index.js`) walks Claude + Grok session stores, parses each transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Grok `updates.jsonl` streams are normalized into the same record shape as Claude JSONL so the UI has one renderer. Full transcripts are read fresh from disk on demand.
+The backend indexer (`backend/cc-index.js`) walks coding-agent session stores (claude + grok), parses each transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Grok `updates.jsonl` streams are normalized into the same record shape as claude JSONL so the UI has one renderer. Full transcripts are read fresh from disk on demand.
 
 ```
 ~/.claude/projects/*.jsonl  ─┐

@@ -15,8 +15,8 @@ export type SessionSource = 'claude' | 'grok' | string;
 /**
  * Build the shell command that resumes a local agent session by its id.
  *
- * Claude Code: `claude --resume <id>`
- * Grok CLI:    `grok --resume <id>`
+ * claude: `claude --resume <id>`
+ * grok:   `grok --resume <id>`
  *
  * When a `cwd` is given, the command is prefixed with `cd <cwd> &&` so it
  * resumes in the conversation's own project directory.

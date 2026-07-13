@@ -1479,7 +1479,7 @@ app.post("/api/portal", authMiddleware, csrfProtection, async (c) => {
 
 // ==== SESSION REVIEW API (multi-source transcript indexer) ====
 // Mounted under /api/cc/* (legacy path) to match frontend apiRequest calls.
-// Indexes Claude Code + Grok CLI sessions. Read-mostly; no auth (noLogin: true).
+// Indexes coding-agent sessions (claude + grok). Read-mostly; no auth (noLogin: true).
 
 /** GET /api/cc/projects — list projects (aggregated sessions by canonical cwd) */
 app.get('/api/cc/projects', async (c) => {
