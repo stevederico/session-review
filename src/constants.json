@@ -6,9 +6,9 @@
         "font": "geist",
         "iconLibrary": "lucide"
     },
-    "appName": "CC Review",
+    "appName": "Session Review",
     "appIcon": "messages-square",
-    "tagline": "Browse, search, and analyze your Claude Code conversations",
+    "tagline": "Browse, search, and analyze local coding-agent sessions",
     "cta": "Get Started",
     "ctaHeading": "Ready to Get Started?",
     "noLogin": true,

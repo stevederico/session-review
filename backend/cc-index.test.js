@@ -1,6 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractText, priceFor, costOf, canonicalProject, isConversational, resolveProject } from './cc-index.js';
+import {
+  extractText,
+  priceFor,
+  costOf,
+  canonicalProject,
+  isConversational,
+  resolveProject,
+  toIso,
+  decodeGrokCwd,
+  grokToolName,
+  stringifyGrokOutput,
+  grokUpdatesToRecords,
+} from './cc-index.js';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 test('extractText returns a plain string message body', () => {
   assert.equal(extractText({ message: { role: 'user', content: 'hello' } }), 'hello');
@@ -39,6 +54,138 @@ test('priceFor defaults unknown models to sonnet pricing', () => {
     cacheWrite: 3.75,
     cacheRead: 0.3,
   });
+});
+
+test('priceFor resolves grok family pricing', () => {
+  assert.equal(priceFor('grok-4.5').in, 3);
+  assert.equal(priceFor('grok-build').out, 15);
+});
+
+test('toIso converts unix seconds to ISO', () => {
+  assert.equal(toIso(0), '1970-01-01T00:00:00.000Z');
+});
+
+test('toIso prefers agentTimestampMs', () => {
+  assert.equal(toIso(1, 0), '1970-01-01T00:00:00.000Z');
+});
+
+test('decodeGrokCwd URL-decodes the group folder name', () => {
+  assert.equal(
+    decodeGrokCwd('%2FUsers%2Fsd%2FDesktop%2Fprojects', tmpdir()),
+    '/Users/dev/projects',
+  );
+});
+
+test('grokToolName prefers rawInput.variant', () => {
+  assert.equal(grokToolName({ title: 'Write', rawInput: { variant: 'CursorWrite' } }), 'CursorWrite');
+});
+
+test('grokToolName falls back to title prefix', () => {
+  assert.equal(grokToolName({ title: 'Edit `/tmp/x`' }), 'Edit');
+});
+
+test('stringifyGrokOutput prefers tool_output_for_prompt', () => {
+  assert.equal(
+    stringifyGrokOutput({
+      rawOutput: { EditsApplied: { tool_output_for_prompt: 'Wrote file' } },
+    }),
+    'Wrote file',
+  );
+});
+
+test('grokUpdatesToRecords normalizes user + assistant + tool to Claude shape', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'grok-sess-'));
+  const lines = [
+    {
+      timestamp: 1000,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'user_message_chunk',
+          content: { type: 'text', text: 'hello' },
+        },
+        _meta: { agentTimestampMs: 1000000 },
+      },
+    },
+    {
+      timestamp: 1001,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'agent_thought_chunk',
+          content: { type: 'text', text: 'thinking…' },
+        },
+      },
+    },
+    {
+      timestamp: 1002,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 't1',
+          title: 'Read',
+          rawInput: { path: '/tmp/a' },
+        },
+      },
+    },
+    {
+      timestamp: 1003,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 't1',
+          status: 'completed',
+          rawOutput: { tool_output_for_prompt: 'file body' },
+        },
+      },
+    },
+    {
+      timestamp: 1004,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { type: 'text', text: 'done' },
+        },
+      },
+    },
+    {
+      timestamp: 1005,
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'turn_completed',
+          usage: {
+            inputTokens: 100,
+            outputTokens: 10,
+            cachedReadTokens: 40,
+            modelUsage: { 'grok-4.5': {} },
+          },
+        },
+      },
+    },
+  ];
+  writeFileSync(join(dir, 'updates.jsonl'), lines.map((l) => JSON.stringify(l)).join('\n'));
+  const records = grokUpdatesToRecords(dir);
+  assert.equal(records[0].type, 'user');
+  assert.equal(records[0].message.content, 'hello');
+  assert.equal(records[1].type, 'assistant');
+  const blocks = records[1].message.content;
+  assert.ok(blocks.some((b) => b.type === 'thinking' && b.thinking.includes('thinking')));
+  assert.ok(blocks.some((b) => b.type === 'text' && b.text === 'done'));
+  assert.ok(blocks.some((b) => b.type === 'tool_use' && b.id === 't1'));
+  assert.equal(records[1].message.model, 'grok-4.5');
+  assert.equal(records[2].type, 'user');
+  assert.equal(records[2].message.content[0].type, 'tool_result');
+  assert.equal(records[2].message.content[0].content, 'file body');
 });
 
 test('costOf prices 1M opus input tokens', () => {

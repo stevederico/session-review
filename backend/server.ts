@@ -1477,9 +1477,9 @@ app.post("/api/portal", authMiddleware, csrfProtection, async (c) => {
   }
 });
 
-// ==== CC REVIEW API (Claude Code transcript indexer) ====
-// Mounted under /api/cc/* to match frontend apiRequest calls (devBackendURL + /cc/*).
-// These are read-mostly local indexer endpoints; no auth required (noLogin: true in constants).
+// ==== SESSION REVIEW API (multi-source transcript indexer) ====
+// Mounted under /api/cc/* (legacy path) to match frontend apiRequest calls.
+// Indexes Claude Code + Grok CLI sessions. Read-mostly; no auth (noLogin: true).
 
 /** GET /api/cc/projects — list projects (aggregated sessions by canonical cwd) */
 app.get('/api/cc/projects', async (c) => {

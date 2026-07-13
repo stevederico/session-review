@@ -42,6 +42,7 @@ interface Project {
 /** A session row from `/cc/sessions`. */
 interface Session {
   id: string;
+  source?: string;
   summary?: string;
   cwd?: string;
   project?: string;
@@ -58,6 +59,7 @@ interface Session {
 /** Session metadata from `/cc/session/:id` (the `meta` field). */
 interface SessionMetaData {
   id?: string;
+  source?: string;
   cwd?: string;
   git_branch?: string;
   models?: string;
@@ -68,10 +70,10 @@ interface SessionMetaData {
   overridden?: boolean;
 }
 
-/** Full `/cc/session/:id` response: metadata plus raw transcript records. */
+/** Full `/cc/session/:id` response: metadata plus normalized transcript records. */
 interface SessionDetail {
   meta?: SessionMetaData;
-  /** Raw Claude Code JSONL records, passed straight to {@link Transcript}. */
+  /** Normalized transcript records, passed straight to {@link Transcript}. */
   records: unknown[];
 }
 
@@ -403,7 +405,14 @@ export default function BrowseView() {
                         )}
                       >
                         <span className="flex w-full items-center justify-between gap-x-2 text-xs text-muted-foreground">
-                          <span className="truncate font-semibold">{folderName(session)}</span>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate font-semibold">{folderName(session)}</span>
+                            {session.source === 'grok' ? (
+                              <Badge variant="outline" className="shrink-0">grok</Badge>
+                            ) : session.source === 'claude' ? (
+                              <Badge variant="outline" className="shrink-0">claude</Badge>
+                            ) : null}
+                          </span>
                           <span className="shrink-0">{relativeTime(session.last_ts)}</span>
                         </span>
                         <span className="w-full truncate text-xs text-foreground">
@@ -411,11 +420,12 @@ export default function BrowseView() {
                         </span>
                         <SessionMeta session={session} />
                       </button>
-                      {/* Copy `claude --resume <id>` without opening the row; revealed
+                      {/* Copy resume command without opening the row; revealed
                           on hover/focus so it doesn't clutter the dense list. */}
                       <ResumeKey
                         id={session.id}
                         cwd={session.cwd}
+                        source={session.source}
                         variant="compact"
                         className="absolute right-2 top-3 rounded bg-accent opacity-0 group-hover/session:opacity-100 focus-visible:opacity-100"
                       />
@@ -450,6 +460,9 @@ export default function BrowseView() {
               <div className="flex shrink-0 flex-col gap-2 border-b border-border p-4 lg:px-6">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {detailMeta?.cwd ? <span className="truncate font-mono">{detailMeta.cwd}</span> : null}
+                  {detailMeta?.source ? (
+                    <Badge variant="secondary">{detailMeta.source}</Badge>
+                  ) : null}
                   {detailMeta?.git_branch ? <Badge variant="outline">{detailMeta.git_branch}</Badge> : null}
                   {detailModels.map((m) => (
                     <Badge key={m} variant="secondary">{m}</Badge>
@@ -479,9 +492,12 @@ export default function BrowseView() {
                   </Select>
                   {detailMeta?.overridden ? <Badge variant="secondary">tagged</Badge> : null}
                 </div>
-                {/* Resume key — the exact command to reopen this conversation in
-                    the terminal (`claude --resume <id>`). */}
-                <ResumeKey id={detailMeta?.id ?? selectedSessionId} cwd={detailMeta?.cwd} />
+                {/* Resume key — shell command to reopen this conversation. */}
+                <ResumeKey
+                  id={detailMeta?.id ?? selectedSessionId}
+                  cwd={detailMeta?.cwd}
+                  source={detailMeta?.source}
+                />
               </div>
               <div className="min-h-0 flex-1">
                 <Transcript records={detail.records} meta={detail.meta} />

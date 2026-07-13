@@ -1,9 +1,6 @@
 /**
- * Type declarations for the app-custom Claude Code transcript indexer
- * (`cc-index.js`). The runtime module is JSDoc-annotated JavaScript; this
- * sidecar gives its consumers (server.ts) a precise, `any`-free surface.
- * Dynamic SQLite result rows are typed as `Record<string, unknown>` since
- * callers only JSON-serialize them.
+ * Type declarations for the multi-source session indexer (`cc-index.js`).
+ * Supports Claude Code (~/.claude/projects) and Grok CLI (~/.grok/sessions).
  */
 
 /** Pricing per 1M tokens (USD) for a model family. */
@@ -39,7 +36,7 @@ export interface OverrideResult {
   project_key: string | null;
 }
 
-/** Full session detail: metadata row plus raw transcript records. */
+/** Full session detail: metadata row plus normalized transcript records. */
 export interface SessionDetail {
   meta: Record<string, unknown>;
   records: Record<string, unknown>[];
@@ -71,6 +68,16 @@ export function extractText(rec: Record<string, unknown>): string;
 
 export function isConversational(rec: Record<string, unknown>): boolean;
 
+export function toIso(ts?: number | string, ms?: number): string;
+
+export function decodeGrokCwd(encoded: string, groupDir: string): string;
+
+export function grokToolName(u: Record<string, unknown>): string;
+
+export function stringifyGrokOutput(u: Record<string, unknown>): string;
+
+export function grokUpdatesToRecords(sessionDir: string): Record<string, unknown>[];
+
 export function reindex(force?: boolean): ReindexResult;
 
 export function projects(): Record<string, unknown>[];
@@ -86,3 +93,8 @@ export function session(id: string): SessionDetail | null;
 export function search(q: string, project?: string, limit?: number): Record<string, unknown>[];
 
 export function stats(): Stats;
+
+export const CLAUDE_DIR: string;
+export const PROJECTS_DIR: string;
+export const GROK_SESSIONS: string;
+export const GROK_HOME: string;
