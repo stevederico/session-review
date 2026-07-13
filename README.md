@@ -1,11 +1,11 @@
 <div align="center">
-  <h1>CC Review</h1>
-  <h3>browse, search, and analyze your claude code conversations — local, read-only, react + hono + sqlite</h3>
+  <h1>Session Review</h1>
+  <h3>browse, search, and analyze local coding-agent sessions — Claude Code + Grok CLI — react + hono + sqlite</h3>
 </div>
 
 <br />
 
-Claude Code stores every session as a JSONL transcript under `~/.claude/projects` — local files that never sync to Claude Desktop or claude.ai, so there's no UI to read them. CC Review is that UI: it indexes your transcripts into SQLite and serves a fast browser for reading, full-text search, and usage/cost analytics. Everything stays on your machine.
+Coding agents store every session as local transcripts — Claude Code under `~/.claude/projects`, Grok CLI under `~/.grok/sessions`. Session Review indexes them into SQLite and serves a fast browser for reading, full-text search, and usage/cost analytics. Everything stays on your machine.
 
 <br />
 
@@ -18,7 +18,7 @@ npm run start
 
 Frontend: http://localhost:5173 — Backend: http://localhost:8000
 
-The backend reads `~/.claude/projects` directly and builds its index on first request (incremental by file mtime thereafter). Use **Refresh** in the Browse view to force a re-scan.
+The backend scans both agent homes on first request (incremental by mtime thereafter). Use **Refresh** under Settings to force a re-scan.
 
 <br />
 
@@ -26,7 +26,8 @@ The backend reads `~/.claude/projects` directly and builds its index on first re
 
 ### 📂 **Browse**
 - **Master/detail viewer** — pick a project, pick a session, read the full transcript
-- **Full-fidelity rendering** — user prompts, assistant markdown, and collapsible **Thinking** and **tool-call** blocks
+- **Multi-source** — Claude Code and Grok CLI sessions in one list (source badge + matching resume command)
+- **Full-fidelity rendering** — user prompts, assistant markdown, collapsible thinking and tool-call blocks
 - **Per-session metadata** — model, git branch, message count, estimated cost
 
 ### 🔎 **Search**
@@ -50,16 +51,18 @@ The backend reads `~/.claude/projects` directly and builds its index on first re
 | **Hono** | 4 | Backend HTTP server (Node) |
 | **node:sqlite** | built-in | Index + FTS5 full-text search |
 | **Tailwind CSS** | 4 | Styling (semantic tokens) |
-| **skateboard-ui** | 3.8 | Application shell + shadcn components |
+| **skateboard-ui** | 4.x | Application shell + shadcn components |
 
 <br />
 
 ## 🏗️ Architecture
 
-The backend indexer (`backend/cc-index.js`) walks `~/.claude/projects`, parses each JSONL transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Full transcripts are read fresh from disk on demand so rendering keeps full fidelity. The frontend is a [Skateboard](https://github.com/stevederico/skateboard) shell with three routes (Browse, Search, Analytics) talking to read-only `/api/cc/*` endpoints.
+The backend indexer (`backend/cc-index.js`) walks Claude + Grok session stores, parses each transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Grok `updates.jsonl` streams are normalized into the same record shape as Claude JSONL so the UI has one renderer. Full transcripts are read fresh from disk on demand.
 
 ```
-~/.claude/projects/*.jsonl  →  SQLite (FTS5)  →  Hono /api/cc/*  →  React UI
+~/.claude/projects/*.jsonl  ─┐
+                             ├→ SQLite (FTS5) → Hono /api/cc/* → React UI
+~/.grok/sessions/<cwd>/<id>/ ┘
 ```
 
 <br />

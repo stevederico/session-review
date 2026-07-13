@@ -15,7 +15,7 @@ import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
 
 /**
  * App settings: the skateboard-ui shell settings (account, billing, theme)
- * with a cc-review "Transcripts" card appended for reindexing. Registered via
+ * with a "Transcripts" card appended for reindexing. Registered via
  * `overrides.settings` in {@link module:main}, replacing the shell's default
  * SettingsView while still rendering it inline so nothing is lost.
  *
@@ -25,7 +25,7 @@ export default function SettingsView() {
   const [isReindexing, setIsReindexing] = useState(false);
   const [status, setStatus] = useState('');
 
-  /** Force a full backend re-scan of ~/.claude transcripts and report the result. */
+  /** Force a full backend re-scan of Claude + Grok sessions and report the result. */
   const handleRefresh = async () => {
     setIsReindexing(true);
     setStatus('');
@@ -36,7 +36,7 @@ export default function SettingsView() {
       );
       const files = result?.files ?? 0;
       const changed = result?.changed ?? 0;
-      setStatus(`Reindexed ${files} file${files === 1 ? '' : 's'}, ${changed} changed.`);
+      setStatus(`Reindexed ${files} session${files === 1 ? '' : 's'}, ${changed} changed.`);
     } catch (err) {
       console.error('Reindex failed', err);
       setStatus('Reindex failed. Check that the local server is running.');
@@ -61,7 +61,7 @@ export default function SettingsView() {
           <CardHeader>
             <CardTitle>Transcripts</CardTitle>
             <CardDescription>
-              Rescan ~/.claude for new and changed Claude Code sessions.
+              Rescan ~/.claude and ~/.grok for new and changed agent sessions.
             </CardDescription>
             <CardAction>
               <Button

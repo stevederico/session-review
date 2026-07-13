@@ -215,7 +215,7 @@ const periodViews = (
 });
 
 /**
- * Analytics dashboard for Claude Code usage and cost.
+ * Analytics dashboard for local agent usage and cost.
  *
  * Fetches `/cc/stats` on mount and renders summary stat cards (each cycles
  * through per-day, per-month, and total when clicked), a tokens-per-day bar
@@ -302,7 +302,7 @@ export default function AnalyticsView() {
             </EmptyMedia>
             <EmptyTitle>No usage yet</EmptyTitle>
             <EmptyDescription>
-              Once you have Claude Code sessions, your usage and cost stats will appear here.
+              Once you have Claude Code or Grok CLI sessions, your usage and cost stats will appear here.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
