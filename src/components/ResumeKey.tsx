@@ -17,6 +17,8 @@ interface ResumeKeyProps {
    * prefixed with `cd <cwd> &&` so it resumes from anywhere.
    */
   cwd?: string | null;
+  /** Agent source (`claude` | `grok`); picks the resume binary. */
+  source?: string | null;
   /** Layout variant (default `full`). */
   variant?: 'full' | 'compact';
   /** Extra classes for the root element. */
@@ -24,8 +26,9 @@ interface ResumeKeyProps {
 }
 
 /**
- * Surface the `claude --resume <id>` command for a session so the user can copy
- * it and pick the conversation back up in their terminal.
+ * Surface the resume shell command for a session so the user can copy it and
+ * pick the conversation back up in their terminal (`claude --resume` or
+ * `grok --resume` depending on source).
  *
  * Two layouts:
  *   - `full`    — terminal glyph + the mono command + a copy button. For the
@@ -37,9 +40,9 @@ interface ResumeKeyProps {
  *
  * @returns Null when no id is available.
  */
-export default function ResumeKey({ id, cwd, variant = 'full', className }: ResumeKeyProps) {
+export default function ResumeKey({ id, cwd, source = 'claude', variant = 'full', className }: ResumeKeyProps) {
   const { copied, copy } = useCopy();
-  const command = resumeCommand(id, cwd);
+  const command = resumeCommand(id, cwd, source ?? 'claude');
   if (!command) return null;
   const CopyOrCheck = copied ? Check : Copy;
 

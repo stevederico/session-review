@@ -1,8 +1,9 @@
 /**
  * Application entry point (Skateboard Application Shell Architecture).
  *
- * CC Review is a local, read-only viewer for Claude Code conversation
- * transcripts stored under ~/.claude/projects. Two routes:
+ * Session Review is a local, read-only viewer for coding-agent transcripts
+ * (Claude Code under ~/.claude/projects, Grok CLI under ~/.grok/sessions).
+ * Two routes:
  *   - home      → Browse (projects → sessions → transcript), with global
  *                 full-text search merged into the top bar
  *   - analytics → Token usage and estimated cost

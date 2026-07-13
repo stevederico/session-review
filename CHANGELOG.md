@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.19.0
+
+  Index Grok CLI sessions
+  Normalize Grok transcripts
+  Source badge on sessions
+  Resume by agent source
+  Rebrand Session Review
+  Update settings reindex copy
+
 ## 0.18.0
 
   Add cc API

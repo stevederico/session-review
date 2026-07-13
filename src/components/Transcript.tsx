@@ -42,7 +42,7 @@ type AssistantItem =
   | { kind: 'text'; text: string }
   | { kind: 'tool'; tool: ToolCall };
 
-/** Token-usage block from a Claude Code assistant record. */
+/** Token-usage block from an assistant record. */
 interface Usage {
   output_tokens?: number;
 }
@@ -60,7 +60,7 @@ type Message =
       timestamp?: string;
     };
 
-/** A raw Claude Code JSONL record (loosely typed — shapes vary by `type`). */
+/** A raw transcript record (Claude JSONL or Grok-normalized; shapes vary by `type`). */
 interface RawRecord {
   type?: string;
   timestamp?: string;
@@ -72,7 +72,7 @@ interface RawRecord {
   };
 }
 
-/** One content block inside a message (shape varies by Claude Code version). */
+/** One content block inside a message (shape varies by agent / version). */
 interface ContentBlock {
   type?: string;
   thinking?: string;
@@ -101,6 +101,7 @@ function contentBlocks(content: unknown): ContentBlock[] {
 type TranscriptMeta = object;
 
 // Tool name -> icon. Names not listed fall back to a generic wrench.
+// Includes Claude Code tools and common Grok CLI tool names / variants.
 const TOOL_ICONS: Record<string, IconComponent> = {
   Bash: Terminal,
   Read: FileText,
@@ -111,6 +112,16 @@ const TOOL_ICONS: Record<string, IconComponent> = {
   Task: Bot,
   WebFetch: Globe,
   WebSearch: Globe,
+  run_terminal_command: Terminal,
+  read_file: FileText,
+  search_replace: FilePen,
+  list_dir: FileText,
+  grep: Search,
+  web_search: Globe,
+  web_fetch: Globe,
+  open_page: Globe,
+  CursorWrite: FilePen,
+  CursorRead: FileText,
 };
 
 // Input keys (in priority order) that make a good one-line tool preview.
@@ -161,13 +172,13 @@ function looksLikeMarkdown(text: string): boolean {
 }
 
 /**
- * Walk raw Claude Code JSONL records into an ordered list of chat messages,
+ * Walk normalized transcript records into an ordered list of chat messages,
  * pairing each `tool_use` block with the `tool_result` that carries its output
- * so input + result render in a single pill (mirroring Claude / ChatGPT).
+ * so input + result render in a single pill.
  *
- * The raw block shapes vary by Claude Code version, so individual content
- * blocks are read via a loose {@link ContentBlock} shape while the returned {@link Message} list is
- * strongly typed.
+ * Claude Code records arrive as-is; Grok sessions are normalized by the
+ * indexer into the same shape. Individual content blocks are read via a loose
+ * {@link ContentBlock} shape while the returned {@link Message} list is strongly typed.
  *
  * @param records - Raw records, in chronological order.
  * @returns Ordered, ready-to-render chat messages.
@@ -464,7 +475,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
     <div className="flex flex-col gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
       <div className="flex items-center gap-2">
         <Sparkles size={ICON_SIZE} aria-hidden="true" className="text-app" />
-        <span className="text-label-sm text-foreground">Claude</span>
+        <span className="text-label-sm text-foreground">Assistant</span>
         {model ? (
           <span className="text-copy-sm text-muted-foreground">{shortModel(model)}</span>
         ) : null}
@@ -492,15 +503,15 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
 
 /** Props for {@link Transcript}. */
 interface TranscriptProps {
-  /** Raw Claude Code records, in order. */
+  /** Normalized transcript records, in order. */
   records: unknown[];
   /** Session metadata (not required for layout). */
   meta?: TranscriptMeta;
 }
 
 /**
- * Read-only chat-style renderer for a Claude Code session transcript.
- * Derives a message model from raw JSONL records (pairing tool calls with
+ * Read-only chat-style renderer for a local agent session transcript.
+ * Derives a message model from normalized records (pairing tool calls with
  * their results) and renders it as an editorial, single-column conversation —
  * right-aligned user bubbles, full-width assistant turns, collapsible thinking,
  * and expandable tool pills. Does no fetching; the parent owns loading / error
