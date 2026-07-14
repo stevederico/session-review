@@ -66,9 +66,16 @@ export default function ResumeKey({ id, cwd, source = 'claude', variant = 'full'
   }
 
   return (
-    <div className={cn('flex min-w-0 items-center gap-2 text-xs text-muted-foreground', className)}>
+    <div
+      className={cn(
+        'flex min-w-0 max-w-full items-center gap-2 overflow-hidden text-xs text-muted-foreground',
+        className,
+      )}
+    >
       <Terminal size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
-      <code className="min-w-0 truncate font-mono">{command}</code>
+      <code className="min-w-0 flex-1 overflow-hidden font-mono text-ellipsis whitespace-nowrap">
+        {command}
+      </code>
       <button
         type="button"
         onClick={() => copy(command)}

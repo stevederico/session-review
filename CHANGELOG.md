@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.33.0
+
+  Contain info modal overflow
+
 ## 0.32.0
 
   Borderless info button

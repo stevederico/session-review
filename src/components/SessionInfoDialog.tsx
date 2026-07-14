@@ -119,8 +119,11 @@ export default function SessionInfoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" showCloseButton>
-        <DialogHeader>
+      <DialogContent
+        className="w-full max-w-[calc(100%-2rem)] overflow-hidden sm:max-w-lg"
+        showCloseButton
+      >
+        <DialogHeader className="min-w-0 pr-8">
           <DialogTitle>Conversation info</DialogTitle>
           <DialogDescription>
             Working directory, model, cost, project assignment, and resume command.
@@ -140,7 +143,7 @@ export default function SessionInfoDialog({
         ) : null}
 
         {sessionId && !loading && error ? (
-          <div className="flex flex-col items-start gap-3">
+          <div className="flex min-w-0 flex-col items-start gap-3">
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button type="button" size="sm" variant="outline" onClick={() => load(sessionId)}>
               Try again
@@ -149,9 +152,14 @@ export default function SessionInfoDialog({
         ) : null}
 
         {sessionId && !loading && !error && meta ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {meta.cwd ? <span className="max-w-full break-all font-mono">{meta.cwd}</span> : null}
+          <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
+            {meta.cwd ? (
+              <p className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+                {meta.cwd}
+              </p>
+            ) : null}
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
               {meta.source ? <Badge variant="secondary">{meta.source}</Badge> : null}
               {meta.git_branch ? <Badge variant="outline">{meta.git_branch}</Badge> : null}
               {models.map((m) => (
@@ -165,36 +173,41 @@ export default function SessionInfoDialog({
               <Badge variant="outline">{formatCost(meta.cost)}</Badge>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">Project</span>
-              <Select
-                value={meta.project_key ?? AUTO_DETECT}
-                onValueChange={handleTagProject}
-              >
-                <SelectTrigger
-                  className="w-56"
-                  aria-label="Assign this conversation to a project"
-                  size="sm"
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <span className="shrink-0 text-xs text-muted-foreground">Project</span>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <Select
+                  value={meta.project_key ?? AUTO_DETECT}
+                  onValueChange={handleTagProject}
                 >
-                  <SelectValue placeholder={meta.project_name ?? 'Auto-detect'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={AUTO_DETECT}>Auto-detect (clear)</SelectItem>
-                  {projectsByName.map((p) => (
-                    <SelectItem key={p.project} value={p.project}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {meta.overridden ? <Badge variant="secondary">tagged</Badge> : null}
+                  <SelectTrigger
+                    className="w-full min-w-0 max-w-full sm:max-w-xs"
+                    aria-label="Assign this conversation to a project"
+                    size="sm"
+                  >
+                    <SelectValue placeholder={meta.project_name ?? 'Auto-detect'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AUTO_DETECT}>Auto-detect (clear)</SelectItem>
+                    {projectsByName.map((p) => (
+                      <SelectItem key={p.project} value={p.project}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {meta.overridden ? <Badge variant="secondary">tagged</Badge> : null}
+              </div>
             </div>
 
-            <ResumeKey
-              id={meta.id ?? sessionId}
-              cwd={meta.cwd}
-              source={meta.source}
-            />
+            <div className="min-w-0 max-w-full overflow-hidden">
+              <ResumeKey
+                id={meta.id ?? sessionId}
+                cwd={meta.cwd}
+                source={meta.source}
+                className="max-w-full"
+              />
+            </div>
 
             {status ? (
               <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
