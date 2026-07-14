@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.36.0
+
+  Hide search on Analytics
+
 ## 0.35.0
 
   Convo click leaves Settings

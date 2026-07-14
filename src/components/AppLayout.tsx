@@ -27,8 +27,9 @@ export default function AppLayout() {
   const constants = state.constants;
   const showSidebar = !constants.hideSidebar && sidebarVisible;
   const showTabBar = !constants.hideTabBar && tabBarVisible;
-  // Conversation search is for Browse/Analytics only — not Settings chrome.
-  const showSearch = !location.pathname.toLowerCase().includes('/settings');
+  // Search is Browse-only — hide on Analytics and Settings.
+  const page = (location.pathname.split('/')[2] || 'home').toLowerCase();
+  const showSearch = page === 'home' || page === '';
   const sessionId = searchParams.get('session') ?? '';
   const [infoOpen, setInfoOpen] = useState(false);
 
