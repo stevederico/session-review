@@ -10,7 +10,6 @@ import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@stevederico/skateboard-ui/shadcn/ui/dialog';
@@ -79,9 +78,6 @@ export default function SessionInfoDialog({
       >
         <DialogHeader className="min-w-0 pr-8">
           <DialogTitle>Conversation info</DialogTitle>
-          <DialogDescription>
-            Working directory, model, cost, and resume command.
-          </DialogDescription>
         </DialogHeader>
 
         {!sessionId ? (
@@ -127,12 +123,13 @@ export default function SessionInfoDialog({
               <Badge variant="outline">{formatCost(meta.cost)}</Badge>
             </div>
 
-            <div className="min-w-0 max-w-full overflow-hidden">
+            <div className="min-w-0 max-w-full">
               <ResumeKey
                 id={meta.id ?? sessionId}
                 cwd={meta.cwd}
                 source={meta.source}
                 className="max-w-full"
+                wrap
               />
             </div>
           </div>

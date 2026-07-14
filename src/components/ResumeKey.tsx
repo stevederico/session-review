@@ -21,6 +21,11 @@ interface ResumeKeyProps {
   source?: string | null;
   /** Layout variant (default `full`). */
   variant?: 'full' | 'compact';
+  /**
+   * When true (full variant only), wrap the command instead of truncating
+   * so long resume lines stay fully visible (e.g. in the info modal).
+   */
+  wrap?: boolean;
   /** Extra classes for the root element. */
   className?: string;
 }
@@ -40,7 +45,14 @@ interface ResumeKeyProps {
  *
  * @returns Null when no id is available.
  */
-export default function ResumeKey({ id, cwd, source = 'claude', variant = 'full', className }: ResumeKeyProps) {
+export default function ResumeKey({
+  id,
+  cwd,
+  source = 'claude',
+  variant = 'full',
+  wrap = false,
+  className,
+}: ResumeKeyProps) {
   const { copied, copy } = useCopy();
   const command = resumeCommand(id, cwd, source ?? 'claude');
   if (!command) return null;
@@ -68,12 +80,20 @@ export default function ResumeKey({ id, cwd, source = 'claude', variant = 'full'
   return (
     <div
       className={cn(
-        'flex min-w-0 max-w-full items-center gap-2 overflow-hidden text-xs text-muted-foreground',
+        'flex min-w-0 max-w-full gap-2 text-xs text-muted-foreground',
+        wrap ? 'items-start' : 'items-center overflow-hidden',
         className,
       )}
     >
-      <Terminal size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
-      <code className="min-w-0 flex-1 overflow-hidden font-mono text-ellipsis whitespace-nowrap">
+      <Terminal size={ICON_SIZE} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <code
+        className={cn(
+          'min-w-0 flex-1 font-mono',
+          wrap
+            ? 'break-all whitespace-pre-wrap'
+            : 'overflow-hidden text-ellipsis whitespace-nowrap',
+        )}
+      >
         {command}
       </code>
       <button

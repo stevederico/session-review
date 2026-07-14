@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.43.0
+
+  Wrap resume command in info
+  Drop info modal subtitle
+
 ## 0.42.0
 
   Drop project tag control
