@@ -188,12 +188,12 @@ export default function HeaderSearch({ onSelect, className }: HeaderSearchProps)
   const showDropdown = open && hasQuery;
 
   return (
-    <div ref={wrapperRef} className={cn('relative', className)}>
-      <div className="relative">
+    <div ref={wrapperRef} className={cn('relative flex h-full min-w-0', className)}>
+      <div className="relative flex h-full min-w-0 flex-1 items-center">
         <Search
           size={16}
           aria-hidden="true"
-          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted-foreground lg:left-6"
         />
         <Input
           ref={inputRef}
@@ -207,14 +207,19 @@ export default function HeaderSearch({ onSelect, className }: HeaderSearchProps)
           aria-controls="header-search-results"
           aria-label="Search all conversations"
           placeholder="Search all conversations…"
-          className="pl-8 pr-8"
+          className={cn(
+            'h-full w-full min-w-0 rounded-none border-0 bg-transparent py-0 pl-10 pr-10 shadow-none',
+            'lg:pl-12 lg:pr-12',
+            'focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0',
+            'dark:bg-transparent',
+          )}
         />
         {query ? (
           <button
             type="button"
             onClick={handleClear}
             aria-label="Clear search"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 lg:right-5"
           >
             <X size={16} aria-hidden="true" />
           </button>
@@ -226,7 +231,7 @@ export default function HeaderSearch({ onSelect, className }: HeaderSearchProps)
           id="header-search-results"
           role="listbox"
           aria-live="polite"
-          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-lg border border-border bg-popover p-2 shadow-lg"
+          className="absolute inset-x-0 top-full z-50 max-h-[28rem] overflow-y-auto border-b border-border bg-popover p-2 shadow-lg"
         >
           {error ? (
             <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">

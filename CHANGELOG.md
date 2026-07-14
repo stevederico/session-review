@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.0
+
+  Full-width borderless search bar
+
 ## 0.26.0
 
   Search above content pane

@@ -7,7 +7,6 @@ import { Outlet, useNavigate } from 'react-router';
 import TabBar from '@stevederico/skateboard-ui/TabBar';
 import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
 import { getState } from '@stevederico/skateboard-ui/Context';
-import { Separator } from '@stevederico/skateboard-ui/shadcn/ui/separator';
 import AppSidebar from './AppSidebar';
 import HeaderSearch from './HeaderSearch';
 
@@ -49,15 +48,12 @@ export default function AppLayout() {
           id="main"
           className={`flex min-h-0 flex-col border border-border/50 ${constants.hideSidebarInsetRounding ? 'md:peer-data-[variant=inset]:rounded-none' : ''}`}
         >
-          <header className="flex h-(--header-height) shrink-0 items-center gap-2">
-            <div className="flex w-full items-center gap-2 px-4 lg:px-6">
-              <HeaderSearch
-                onSelect={handleSelectSession}
-                className="w-full max-w-xl"
-              />
-            </div>
+          <header className="flex h-(--header-height) w-full shrink-0 items-stretch border-b border-border">
+            <HeaderSearch
+              onSelect={handleSelectSession}
+              className="h-full w-full min-w-0"
+            />
           </header>
-          <Separator />
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <Outlet />
           </div>
