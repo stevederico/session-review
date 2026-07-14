@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.0
+
+  Copy on message hover
+
 ## 0.45.0
 
   Info pills beside title

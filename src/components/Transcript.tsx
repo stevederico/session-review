@@ -443,7 +443,14 @@ function AssistantActions({ text, model, usage }: { text: string; model: string;
         type="button"
         onClick={() => copy(text)}
         aria-label="Copy message"
-        className="flex items-center gap-1 rounded p-1 transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className={cn(
+          'flex items-center gap-1 rounded p-1 transition-opacity transition-colors',
+          // Show on message hover/focus; stay visible while "Copied" feedback is up.
+          'opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100',
+          'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          'hover:text-foreground',
+          copied && 'opacity-100 text-success',
+        )}
       >
         <CopyIcon
           size={SMALL_ICON_SIZE}
@@ -472,7 +479,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
     .join('\n\n');
 
   return (
-    <div className="flex flex-col gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
+    <div className="group/message flex flex-col gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
       <div className="flex items-center gap-2">
         <Sparkles size={ICON_SIZE} aria-hidden="true" className="text-app" />
         <span className="text-label-sm text-foreground">Assistant</span>
