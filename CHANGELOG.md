@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.61.0
+
+  Memo transcript turns
+  Single-pass tool/text split
+
 ## 0.60.0
 
   Drop Assistant message label

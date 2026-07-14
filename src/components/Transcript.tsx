@@ -1,4 +1,4 @@
-import { useMemo, useState, useDeferredValue } from 'react';
+import { memo, useMemo, useState, useDeferredValue } from 'react';
 import type { ReactElement } from 'react';
 import type { IconProps } from '@stevederico/skateboard-ui/icons';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
@@ -303,20 +303,26 @@ function deriveMessages(records: unknown[]): Message[] {
   return messages;
 }
 
+/** Compact meta line style (timestamps, secondary chrome). */
+const META = 'text-xs tabular-nums text-muted-foreground';
+
 /** Centered, muted system notice. */
-function MessageSystem({ text }: { text: string }) {
+const MessageSystem = memo(function MessageSystem({ text }: { text: string }) {
   return (
     <div className="text-center text-sm italic text-muted-foreground [content-visibility:auto] [contain-intrinsic-size:auto_32px]">
       {text}
     </div>
   );
-}
-
-/** Compact meta line style (timestamps, secondary chrome). */
-const META = 'text-xs tabular-nums text-muted-foreground';
+});
 
 /** Right-aligned user prompt bubble; timestamp shows on hover. */
-function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) {
+const MessageUser = memo(function MessageUser({
+  text,
+  timestamp,
+}: {
+  text: string;
+  timestamp?: string;
+}) {
   const time = formatMessageTime(timestamp);
   return (
     <div className="group/user flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
@@ -336,7 +342,7 @@ function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) 
       ) : null}
     </div>
   );
-}
+});
 
 /** Shared chrome for assistant secondary rows (Thinking / Tools). */
 const ROW_LABEL =
@@ -560,30 +566,35 @@ function AssistantActions({
 /** The assistant variant of {@link Message}. */
 type AssistantMessage = Extract<Message, { role: 'assistant' }>;
 
-/** Full-width, no-bubble assistant turn: quiet header, tools, then response. */
-function MessageAssistant({ message }: { message: AssistantMessage }) {
+/**
+ * Full-width assistant turn: tools then response.
+ * Memoized + single-pass item split (js-combine-iterations / rerender-memo).
+ */
+const MessageAssistant = memo(function MessageAssistant({
+  message,
+}: {
+  message: AssistantMessage;
+}) {
   const { thinking, items, usage, timestamp } = message;
-  // Tools first, then prose — tools are the work; the reply summarizes after.
-  const toolItems = items.filter(
-    (item): item is Extract<AssistantItem, { kind: 'tool' }> => item.kind === 'tool',
-  );
-  const textItems = items.filter(
-    (item): item is Extract<AssistantItem, { kind: 'text' }> => item.kind === 'text',
-  );
-  const assistantText = textItems.map((item) => item.text).join('\n\n');
+  // One pass: tools first for display, text for body + copy payload.
+  const tools: ToolCall[] = [];
+  const texts: string[] = [];
+  for (const item of items) {
+    if (item.kind === 'tool') tools.push(item.tool);
+    else texts.push(item.text);
+  }
+  const assistantText = texts.join('\n\n');
 
   return (
     <div className="group/message flex flex-col gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
 
-      {toolItems.length > 0 ? (
-        <ToolsDisclosure tools={toolItems.map((item) => item.tool)} />
-      ) : null}
+      {tools.length > 0 ? <ToolsDisclosure tools={tools} /> : null}
 
-      {textItems.length > 0 ? (
+      {texts.length > 0 ? (
         <div className="flex flex-col gap-2 text-base leading-relaxed">
-          {textItems.map((item, i) => (
-            <Markdown key={i}>{item.text}</Markdown>
+          {texts.map((text, i) => (
+            <Markdown key={i}>{text}</Markdown>
           ))}
         </div>
       ) : null}
@@ -591,7 +602,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
       <AssistantActions text={assistantText} usage={usage} timestamp={timestamp} />
     </div>
   );
-}
+});
 
 /** Props for {@link Transcript}. */
 interface TranscriptProps {
