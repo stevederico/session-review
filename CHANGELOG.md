@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.53.0
+
+  Fix dark surface contrast
+  Secondary table backgrounds
+
 ## 0.52.0
 
   Cleaner message chrome

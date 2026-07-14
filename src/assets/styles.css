@@ -7,9 +7,39 @@
   --color-app: #000000;
 }
 
+/*
+ * Surface ladder (must stay distinct for nested UI: tables, code, tool cards).
+ *
+ * Light: page ≈ card, secondary surfaces use muted/accent steps.
+ * Dark: each step is a real L* jump so zebra rows, cards, and code blocks
+ * don't collapse into the page (the old #0d0d0d card override killed contrast).
+ */
+:root {
+  --surface-secondary: oklch(0.96 0 0);
+  --surface-tertiary: oklch(0.94 0 0);
+}
+
 .dark {
-  /* Invert so the mark stays visible on dark chrome. */
+  /* Invert brand mark on dark chrome. */
   --color-app: #ffffff;
+  /* Lift crushed dark surfaces for readable nested components. */
+  --background: oklch(0.09 0 0);
+  --card: oklch(0.15 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.15 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.78 0 0);
+  --accent: oklch(0.24 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.32 0 0);
+  --surface-secondary: oklch(0.18 0 0);
+  --surface-tertiary: oklch(0.22 0 0);
+}
+
+@theme {
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-tertiary: var(--surface-tertiary);
 }
 
 
@@ -51,11 +81,6 @@
 [data-sidebar="footer"] [data-sidebar="menu-button"] > div > span {
   overflow: visible !important;
   text-overflow: unset !important;
-}
-
-.dark {
-  --card: #0d0d0d;
-  --accent: #111111;
 }
 
 /*

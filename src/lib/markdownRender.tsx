@@ -24,9 +24,9 @@ export { parseMarkdown };
 const ICON_SIZE = 14;
 
 // --- inline rendering --------------------------------------------------------
-// Inline code inherits body size; slightly smaller mono keeps it dense without
-// fighting the transcript's single body scale.
-const CODE_CLASS = 'rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]';
+// Inline code: solid secondary surface (not a faint wash) for WCAG contrast.
+const CODE_CLASS =
+  'rounded bg-surface-secondary px-1 py-0.5 font-mono text-[0.875em] text-foreground';
 const LINK_CLASS = 'text-primary underline underline-offset-2 hover:opacity-80';
 
 /**
@@ -136,24 +136,34 @@ function List({ ordered, items }: { ordered: boolean; items: ListItem[] }): Reac
   );
 }
 
-/** Render a GFM table token with a header row and zebra-striped body. */
+/**
+ * GFM table: bordered secondary surface, solid header band, real zebra rows.
+ * Avoids low-opacity washes that disappear on dark backgrounds.
+ */
 function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactNode {
   return h(
     'div',
-    { className: 'my-3 overflow-x-auto' },
+    {
+      className:
+        'my-3 overflow-x-auto rounded-lg border border-border bg-surface-secondary',
+    },
     h(
       'table',
-      { className: 'w-full text-base leading-relaxed' },
+      { className: 'w-full border-collapse text-base leading-relaxed' },
       h(
         'thead',
         null,
         h(
           'tr',
-          { className: 'border-b border-border' },
+          { className: 'border-b border-border bg-surface-tertiary' },
           header.map((cell, idx) =>
             h(
               'th',
-              { key: idx, className: 'px-2.5 py-1.5 text-left align-top font-semibold' },
+              {
+                key: idx,
+                className:
+                  'px-3 py-2 text-left align-top font-semibold text-foreground',
+              },
               inline(cell),
             ),
           ),
@@ -165,11 +175,20 @@ function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactN
         rows.map((row, rIdx) =>
           h(
             'tr',
-            { key: rIdx, className: 'odd:bg-muted/30' },
+            {
+              key: rIdx,
+              className:
+                rIdx % 2 === 1
+                  ? 'border-b border-border bg-muted last:border-b-0'
+                  : 'border-b border-border bg-surface-secondary last:border-b-0',
+            },
             row.map((cell, cIdx) =>
               h(
                 'td',
-                { key: cIdx, className: 'px-2.5 py-1.5 text-left align-top' },
+                {
+                  key: cIdx,
+                  className: 'px-3 py-2 text-left align-top text-foreground',
+                },
                 inline(cell),
               ),
             ),
@@ -186,12 +205,15 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
   const Icon = copied ? Check : Copy;
   return h(
     'div',
-    { className: 'my-3 overflow-hidden rounded-lg border border-border' },
+    {
+      className:
+        'my-3 overflow-hidden rounded-lg border border-border bg-surface-secondary',
+    },
     h(
       'div',
       {
         className:
-          'flex items-center justify-between bg-muted px-3 py-1.5 text-sm text-muted-foreground',
+          'flex items-center justify-between border-b border-border bg-surface-tertiary px-3 py-1.5 text-sm text-muted-foreground',
       },
       h('span', { className: 'font-mono' }, (lang || 'text').toLowerCase()),
       h(
@@ -208,10 +230,10 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
     ),
     h(
       'pre',
-      { className: 'overflow-x-auto bg-card p-3' },
+      { className: 'overflow-x-auto bg-surface-secondary p-3' },
       h(
         'code',
-        { className: 'font-mono text-sm leading-relaxed whitespace-pre' },
+        { className: 'font-mono text-sm leading-relaxed whitespace-pre text-foreground' },
         code,
       ),
     ),
@@ -235,7 +257,7 @@ function renderBlock(token: BlockToken, key: string): ReactNode {
         {
           key,
           className:
-            'my-2 border-l-2 border-border bg-muted/40 py-1 pl-3 text-base leading-relaxed text-muted-foreground',
+            'my-2 border-l-2 border-border bg-surface-secondary py-1.5 pl-3 text-base leading-relaxed text-foreground',
         },
         inline(token.text),
       );

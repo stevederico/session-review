@@ -353,7 +353,7 @@ function ThinkingDisclosure({ text }: { text: string }) {
         />
       </button>
       {open ? (
-        <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/50 p-3 font-mono text-sm leading-relaxed text-muted-foreground motion-safe:animate-in motion-safe:fade-in">
+        <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-surface-secondary p-3 font-mono text-sm leading-relaxed text-foreground motion-safe:animate-in motion-safe:fade-in">
           {text}
         </div>
       ) : null}
@@ -430,12 +430,12 @@ function ToolPill({ tool }: { tool: ToolCall }) {
       : result;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface-secondary">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-base transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-base transition-colors hover:bg-surface-tertiary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
         <ToolIcon size={ICON_SIZE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium text-foreground">{label}</span>
@@ -460,9 +460,9 @@ function ToolPill({ tool }: { tool: ToolCall }) {
       </button>
 
       {open ? (
-        <div className="flex flex-col gap-2 border-t border-border p-3 motion-safe:animate-in motion-safe:fade-in">
+        <div className="flex flex-col gap-2 border-t border-border bg-surface-secondary p-3 motion-safe:animate-in motion-safe:fade-in">
           <div className="text-sm font-medium text-muted-foreground">Input</div>
-          <pre className="overflow-x-auto rounded bg-muted/50 p-2.5 font-mono text-sm leading-relaxed text-foreground">
+          <pre className="overflow-x-auto rounded border border-border bg-surface-tertiary p-2.5 font-mono text-sm leading-relaxed text-foreground">
             <code>{JSON.stringify(input ?? {}, null, 2)}</code>
           </pre>
 
@@ -477,13 +477,13 @@ function ToolPill({ tool }: { tool: ToolCall }) {
                 Result
               </div>
               {!isError && looksLikeMarkdown(resultText) ? (
-                <div className="max-h-72 overflow-y-auto rounded bg-muted/50 p-2.5 text-base">
+                <div className="max-h-72 overflow-y-auto rounded border border-border bg-surface-tertiary p-2.5 text-base">
                   <Markdown>{resultText}</Markdown>
                 </div>
               ) : (
                 <pre
                   className={cn(
-                    'max-h-72 overflow-y-auto rounded bg-muted/50 p-2.5 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words',
+                    'max-h-72 overflow-y-auto rounded border border-border bg-surface-tertiary p-2.5 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words',
                     isError ? 'text-destructive' : 'text-foreground',
                   )}
                 >
