@@ -24,7 +24,9 @@ export { parseMarkdown };
 const ICON_SIZE = 14;
 
 // --- inline rendering --------------------------------------------------------
-const CODE_CLASS = 'rounded bg-muted px-1 py-0.5 font-mono text-[0.9em]';
+// Inline code inherits body size; slightly smaller mono keeps it dense without
+// fighting the transcript's single body scale.
+const CODE_CLASS = 'rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]';
 const LINK_CLASS = 'text-primary underline underline-offset-2 hover:opacity-80';
 
 /**
@@ -74,12 +76,13 @@ function inline(text: string): ReactNode[] {
 }
 
 // --- block components --------------------------------------------------------
+// Chat-scale headings: stay within ~text-sm body, never jump to display sizes.
 const HEADING_CLASSES: Record<number, string> = {
-  1: 'text-2xl',
-  2: 'text-xl',
-  3: 'text-lg',
-  4: 'text-base',
-  5: 'text-sm',
+  1: 'text-base',
+  2: 'text-sm',
+  3: 'text-sm',
+  4: 'text-sm',
+  5: 'text-xs',
   6: 'text-xs',
 };
 
@@ -88,7 +91,7 @@ function Heading({ level, text }: { level: number; text: string }): ReactNode {
   return h(
     `h${level}`,
     {
-      className: `${HEADING_CLASSES[level] ?? 'text-base'} font-sans font-semibold tracking-tight mt-5 mb-2 first:mt-0`,
+      className: `${HEADING_CLASSES[level] ?? 'text-sm'} font-sans font-semibold tracking-tight mt-4 mb-1.5 first:mt-0`,
     },
     inline(text),
   );
@@ -101,7 +104,7 @@ function List({ ordered, items }: { ordered: boolean; items: ListItem[] }): Reac
   return h(
     Tag,
     {
-      className: `${ordered ? 'list-decimal' : 'list-disc'} ${isTaskList ? 'list-none pl-0' : 'pl-5'} my-2 space-y-1`,
+      className: `${ordered ? 'list-decimal' : 'list-disc'} ${isTaskList ? 'list-none pl-0' : 'pl-5'} my-2 space-y-1 text-sm leading-relaxed`,
     },
     items.map((item, idx) => {
       // A nested sub-list (already a {type:'list',...} token) renders recursively;
@@ -137,10 +140,10 @@ function List({ ordered, items }: { ordered: boolean; items: ListItem[] }): Reac
 function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactNode {
   return h(
     'div',
-    { className: 'overflow-x-auto my-3' },
+    { className: 'my-3 overflow-x-auto' },
     h(
       'table',
-      { className: 'w-full text-sm' },
+      { className: 'w-full text-sm leading-relaxed' },
       h(
         'thead',
         null,
@@ -150,7 +153,7 @@ function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactN
           header.map((cell, idx) =>
             h(
               'th',
-              { key: idx, className: 'px-3 py-1.5 text-left align-top font-semibold' },
+              { key: idx, className: 'px-2.5 py-1.5 text-left align-top font-semibold' },
               inline(cell),
             ),
           ),
@@ -166,7 +169,7 @@ function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactN
             row.map((cell, cIdx) =>
               h(
                 'td',
-                { key: cIdx, className: 'px-3 py-1.5 text-left align-top' },
+                { key: cIdx, className: 'px-2.5 py-1.5 text-left align-top' },
                 inline(cell),
               ),
             ),
@@ -183,12 +186,12 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
   const Icon = copied ? Check : Copy;
   return h(
     'div',
-    { className: 'rounded-lg border border-border overflow-hidden my-3' },
+    { className: 'my-3 overflow-hidden rounded-lg border border-border' },
     h(
       'div',
       {
         className:
-          'flex items-center justify-between bg-muted px-3 py-1.5 text-copy-sm text-muted-foreground',
+          'flex items-center justify-between bg-muted px-3 py-1.5 text-xs text-muted-foreground',
       },
       h('span', { className: 'font-mono' }, (lang || 'text').toLowerCase()),
       h(
@@ -206,7 +209,11 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
     h(
       'pre',
       { className: 'overflow-x-auto bg-card p-3' },
-      h('code', { className: 'font-mono text-copy-sm leading-relaxed whitespace-pre' }, code),
+      h(
+        'code',
+        { className: 'font-mono text-xs leading-relaxed whitespace-pre' },
+        code,
+      ),
     ),
   );
 }
@@ -228,18 +235,19 @@ function renderBlock(token: BlockToken, key: string): ReactNode {
         {
           key,
           className:
-            'border-l-2 border-primary bg-muted/40 pl-3 py-1 my-2 text-muted-foreground',
+            'my-2 border-l-2 border-border bg-muted/40 py-1 pl-3 text-sm leading-relaxed text-muted-foreground',
         },
         inline(token.text),
       );
     case 'hr':
-      return h('hr', { key, className: 'my-4 border-border' });
+      return h('hr', { key, className: 'my-3 border-border' });
     case 'paragraph':
       return h(
         'p',
         {
           key,
-          className: 'leading-relaxed text-foreground my-2 whitespace-pre-wrap break-words',
+          className:
+            'my-1.5 text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground first:mt-0 last:mb-0',
         },
         inline(token.text),
       );

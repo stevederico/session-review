@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.47.0
+
+  Unify conversation typography
+
 ## 0.46.0
 
   Copy on message hover

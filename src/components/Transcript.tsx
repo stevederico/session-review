@@ -307,19 +307,21 @@ function deriveMessages(records: unknown[]): Message[] {
 /** Centered, muted system notice. */
 function MessageSystem({ text }: { text: string }) {
   return (
-    <div className="px-4 text-center text-copy-sm italic text-muted-foreground [content-visibility:auto] [contain-intrinsic-size:auto_32px]">{text}</div>
+    <div className="px-4 text-center text-xs italic text-muted-foreground [content-visibility:auto] [contain-intrinsic-size:auto_32px]">
+      {text}
+    </div>
   );
 }
 
 /** Right-aligned user prompt bubble with a timestamp beneath it. */
 function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) {
   return (
-    <div className="flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
-      <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 leading-relaxed text-foreground sm:max-w-[36rem]">
-        <Markdown className="break-words">{text}</Markdown>
+    <div className="flex flex-col items-end gap-1.5 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
+      <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2.5 text-sm leading-relaxed text-foreground sm:max-w-[36rem]">
+        <Markdown className="break-words text-sm leading-relaxed">{text}</Markdown>
       </div>
       {timestamp ? (
-        <span className="px-1 text-copy-sm text-muted-foreground">{formatDate(timestamp)}</span>
+        <span className="px-1 text-xs text-muted-foreground">{formatDate(timestamp)}</span>
       ) : null}
     </div>
   );
@@ -334,7 +336,7 @@ function ThinkingDisclosure({ text }: { text: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-fit items-center gap-1.5 rounded text-copy-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="flex w-fit items-center gap-1.5 rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <Brain size={SMALL_ICON_SIZE} aria-hidden="true" />
         <span>Thinking</span>
@@ -345,7 +347,7 @@ function ThinkingDisclosure({ text }: { text: string }) {
         />
       </button>
       {open ? (
-        <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/50 p-3 font-mono text-copy-sm leading-relaxed text-muted-foreground motion-safe:animate-in motion-safe:fade-in">
+        <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/50 p-3 font-mono text-xs leading-relaxed text-muted-foreground motion-safe:animate-in motion-safe:fade-in">
           {text}
         </div>
       ) : null}
@@ -373,12 +375,12 @@ function ToolPill({ tool }: { tool: ToolCall }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
         <ToolIcon size={ICON_SIZE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-        <span className="shrink-0 font-medium text-copy-md text-foreground">{label}</span>
+        <span className="shrink-0 font-medium text-foreground">{label}</span>
         {preview ? (
-          <span className="truncate font-mono text-copy-sm text-muted-foreground">{preview}</span>
+          <span className="truncate font-mono text-xs text-muted-foreground">{preview}</span>
         ) : null}
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
           {isError ? (
@@ -399,24 +401,29 @@ function ToolPill({ tool }: { tool: ToolCall }) {
 
       {open ? (
         <div className="flex flex-col gap-2 border-t border-border p-3 motion-safe:animate-in motion-safe:fade-in">
-          <div className="text-label-sm text-muted-foreground">Input</div>
-          <pre className="overflow-x-auto rounded bg-muted/50 p-2 font-mono text-copy-sm leading-relaxed text-foreground">
+          <div className="text-xs font-medium text-muted-foreground">Input</div>
+          <pre className="overflow-x-auto rounded bg-muted/50 p-2 font-mono text-xs leading-relaxed text-foreground">
             <code>{JSON.stringify(input ?? {}, null, 2)}</code>
           </pre>
 
           {hasResult ? (
             <>
-              <div className={cn('text-label-sm', isError ? 'text-destructive' : 'text-muted-foreground')}>
+              <div
+                className={cn(
+                  'text-xs font-medium',
+                  isError ? 'text-destructive' : 'text-muted-foreground',
+                )}
+              >
                 Result
               </div>
               {!isError && looksLikeMarkdown(resultText) ? (
-                <div className="max-h-72 overflow-y-auto rounded bg-muted/50 p-2">
+                <div className="max-h-72 overflow-y-auto rounded bg-muted/50 p-2 text-sm">
                   <Markdown>{resultText}</Markdown>
                 </div>
               ) : (
                 <pre
                   className={cn(
-                    'max-h-72 overflow-y-auto rounded bg-muted/50 p-2 font-mono text-copy-sm leading-relaxed whitespace-pre-wrap break-words',
+                    'max-h-72 overflow-y-auto rounded bg-muted/50 p-2 font-mono text-xs leading-relaxed whitespace-pre-wrap break-words',
                     isError ? 'text-destructive' : 'text-foreground',
                   )}
                 >
@@ -438,7 +445,7 @@ function AssistantActions({ text, model, usage }: { text: string; model: string;
   const tokens = usage?.output_tokens;
 
   return (
-    <div className="flex items-center gap-3 text-copy-sm text-muted-foreground">
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
       <button
         type="button"
         onClick={() => copy(text)}
@@ -479,27 +486,29 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
     .join('\n\n');
 
   return (
-    <div className="group/message flex flex-col gap-2 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
-      <div className="flex items-center gap-2">
+    <div className="group/message flex flex-col gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
+      <div className="flex items-center gap-2 text-xs">
         <Sparkles size={ICON_SIZE} aria-hidden="true" className="text-app" />
-        <span className="text-label-sm text-foreground">Assistant</span>
+        <span className="font-medium text-foreground">Assistant</span>
         {model ? (
-          <span className="text-copy-sm text-muted-foreground">{shortModel(model)}</span>
+          <span className="text-muted-foreground">{shortModel(model)}</span>
         ) : null}
         {timestamp ? (
-          <span className="ml-auto text-copy-sm text-muted-foreground">{formatDate(timestamp)}</span>
+          <span className="ml-auto text-muted-foreground">{formatDate(timestamp)}</span>
         ) : null}
       </div>
 
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
 
-      {items.map((item, i) =>
-        item.kind === 'text' ? (
-          <Markdown key={i}>{item.text}</Markdown>
-        ) : (
-          <ToolPill key={item.tool.id ?? i} tool={item.tool} />
-        ),
-      )}
+      <div className="flex flex-col gap-2 text-sm leading-relaxed">
+        {items.map((item, i) =>
+          item.kind === 'text' ? (
+            <Markdown key={i}>{item.text}</Markdown>
+          ) : (
+            <ToolPill key={item.tool.id ?? i} tool={item.tool} />
+          ),
+        )}
+      </div>
 
       {assistantText || model || Number(usage?.output_tokens) > 0 ? (
         <AssistantActions text={assistantText} model={model} usage={usage} />
@@ -541,7 +550,7 @@ export default function Transcript({ records, meta }: TranscriptProps) {
   if (deferredMessages.length === 0) return null;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-4 selection:bg-app/20">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 text-sm leading-relaxed selection:bg-app/20 sm:px-6">
       {deferredMessages.map((message, i) => {
         if (message.role === 'system') return <MessageSystem key={i} text={message.text} />;
         if (message.role === 'user')
