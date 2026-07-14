@@ -8,7 +8,7 @@
     },
     "appName": "Session Review",
     "appIcon": "messages-square",
-    "tagline": "Browse, search, and analyze local coding-agent sessions",
+    "tagline": "Your coding-agent sessions, local",
     "cta": "Get Started",
     "ctaHeading": "Ready to Get Started?",
     "noLogin": true,

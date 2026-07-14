@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.0
+
+  Simplify landing tagline
+
 ## 0.38.0
 
   Drop Analytics sidebar blurb

@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Session Review</h1>
-  <h3>browse, search, and analyze local coding-agent sessions — react + hono + sqlite</h3>
+  <h3>your coding-agent sessions, local — react + hono + sqlite</h3>
 </div>
 
 <br />
