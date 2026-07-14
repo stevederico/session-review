@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.42.0
+
+  Drop project tag control
+
 ## 0.41.0
 
   Black app accent color
