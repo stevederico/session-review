@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.60.0
+
+  Drop Assistant message label
+
 ## 0.59.0
 
   Square selected sidebar row

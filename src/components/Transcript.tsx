@@ -2,7 +2,6 @@ import { useMemo, useState, useDeferredValue } from 'react';
 import type { ReactElement } from 'react';
 import type { IconProps } from '@stevederico/skateboard-ui/icons';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import Sparkles from '@stevederico/skateboard-ui/icons/Sparkles';
 import Brain from '@stevederico/skateboard-ui/icons/Brain';
 import Wrench from '@stevederico/skateboard-ui/icons/Wrench';
 import Terminal from '@stevederico/skateboard-ui/icons/Terminal';
@@ -575,11 +574,6 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
 
   return (
     <div className="group/message flex flex-col gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
-      <div className="flex w-full items-center gap-2">
-        <Sparkles size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">Assistant</span>
-      </div>
-
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
 
       {toolItems.length > 0 ? (
