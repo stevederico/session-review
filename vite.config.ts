@@ -97,7 +97,17 @@ export default defineConfig({
     },
     watch: {
       usePolling: false,
-      ignored: ['**/node_modules/**', '**/.git/**']
+      // SQLite index lives under backend/databases and is rewritten on every
+      // /cc/projects reindex — watching it full-reloads the SPA in a loop.
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/backend/databases/**',
+        '**/*.db',
+        '**/*.db-journal',
+        '**/*.db-shm',
+        '**/*.db-wal',
+      ]
     }
   },
   logLevel: 'error',

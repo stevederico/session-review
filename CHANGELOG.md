@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.0
+
+  Ignore SQLite from Vite watch
+
 ## 0.22.0
 
   Fix empty company fields

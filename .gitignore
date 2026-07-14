@@ -38,8 +38,10 @@ deno.lock
 
 # Database files
 *.db
+*.db-journal
 *.db-shm
 *.db-wal
+backend/databases/
 
 MIGRATION_GUIDE-0.9.8.md
 SKATEBOARD_UI_EXTENSIONS_PROPOSAL.md
