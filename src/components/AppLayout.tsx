@@ -2,13 +2,16 @@
  * Application shell layout — wider sidebar for conversation list,
  * Browse/Analytics mode picker in the header, search above main content.
  */
-import type { CSSProperties } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { useState, type CSSProperties } from 'react';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 import TabBar from '@stevederico/skateboard-ui/TabBar';
 import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
 import { getState } from '@stevederico/skateboard-ui/Context';
+import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
+import Info from '@stevederico/skateboard-ui/icons/Info';
 import AppSidebar from './AppSidebar';
 import HeaderSearch from './HeaderSearch';
+import SessionInfoDialog from './SessionInfoDialog';
 
 /**
  * Layout override for createSkateboardApp.
@@ -18,6 +21,7 @@ import HeaderSearch from './HeaderSearch';
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { state } = getState();
   const { sidebarVisible, tabBarVisible } = state.ui;
   const constants = state.constants;
@@ -25,6 +29,8 @@ export default function AppLayout() {
   const showTabBar = !constants.hideTabBar && tabBarVisible;
   // Conversation search is for Browse/Analytics only — not Settings chrome.
   const showSearch = !location.pathname.toLowerCase().includes('/settings');
+  const sessionId = searchParams.get('session') ?? '';
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const sidebarStyle: CSSProperties & Record<`--${string}`, string> = {
     // Wider than skateboard default (12rem) so conversation rows fit.
@@ -55,7 +61,29 @@ export default function AppLayout() {
             <header className="flex h-(--header-height) w-full shrink-0 items-stretch border-b border-border">
               <HeaderSearch
                 onSelect={handleSelectSession}
-                className="h-full w-full min-w-0"
+                className="h-full min-w-0 flex-1"
+              />
+              <div className="flex shrink-0 items-center border-l border-border px-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  aria-label={
+                    sessionId
+                      ? 'Conversation info'
+                      : 'Conversation info (select a conversation first)'
+                  }
+                  disabled={!sessionId}
+                  onClick={() => setInfoOpen(true)}
+                >
+                  <Info size={18} strokeWidth={2} aria-hidden />
+                </Button>
+              </div>
+              <SessionInfoDialog
+                open={infoOpen}
+                onOpenChange={setInfoOpen}
+                sessionId={sessionId}
               />
             </header>
           ) : null}

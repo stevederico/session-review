@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.30.0
+
+  Session info modal button
+
 ## 0.29.0
 
   Hide search on Settings
