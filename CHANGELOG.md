@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.0
+
+  Sidebar list render perf
+  Lazy-load Analytics route
+
 ## 0.30.0
 
   Session info modal button

@@ -1,7 +1,7 @@
 /**
  * App sidebar: logo-area Browse/Analytics picker + conversation list (Browse mode).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import type { ComponentProps } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import DynamicIcon from '@stevederico/skateboard-ui/DynamicIcon';
@@ -63,6 +63,52 @@ type AppSidebarProps = Omit<ComponentProps<typeof SidebarRoot>, 'collapsible'>;
 const modePickerItemClass =
   'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
 
+/** Props for a single sidebar conversation row. */
+interface SessionRowProps {
+  session: Session;
+  isSelected: boolean;
+  showProject: boolean;
+  onSelect: (id: string) => void;
+}
+
+/**
+ * One conversation row in the sidebar list.
+ * Memoized + content-visibility so long lists paint cheaper (Vercel:
+ * rerender-memo, rendering-content-visibility).
+ */
+const SessionRow = memo(function SessionRow({
+  session,
+  isSelected,
+  showProject,
+  onSelect,
+}: SessionRowProps) {
+  const title = (session.summary || '').trim() || 'Untitled conversation';
+  const projectLabel = showProject ? folderName(session) : '';
+  const timeLabel = relativeTime(session.last_ts);
+  const meta = [projectLabel, timeLabel].filter(Boolean).join(' · ');
+
+  return (
+    <li className="[content-visibility:auto] [contain-intrinsic-size:auto_3rem]">
+      <button
+        type="button"
+        onClick={() => onSelect(session.id)}
+        aria-current={isSelected ? 'true' : undefined}
+        aria-label={`${title}${meta ? `, ${meta}` : ''}`}
+        className={cn(
+          'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
+          'hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          isSelected && 'bg-accent',
+        )}
+      >
+        <span className="w-full truncate text-sm text-foreground">{title}</span>
+        {meta ? (
+          <span className="w-full truncate text-xs text-muted-foreground">{meta}</span>
+        ) : null}
+      </button>
+    </li>
+  );
+});
+
 /**
  * Desktop sidebar: mode picker (Browse / Analytics) where the logo sits,
  * conversation list under Browse, Settings in the footer.
@@ -123,21 +169,18 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
     }
   }, []);
 
+  // Independent loads start together (async-parallel) — one effect keeps deps honest.
   useEffect(() => {
     if (activeMode !== 'home') return;
-    loadProjects();
-  }, [activeMode, loadProjects]);
-
-  useEffect(() => {
-    if (activeMode !== 'home') return;
-    loadSessions(selectedProject);
-  }, [activeMode, selectedProject, loadSessions]);
+    void loadProjects();
+    void loadSessions(selectedProject);
+  }, [activeMode, selectedProject, loadProjects, loadSessions]);
 
   useEffect(() => {
     const onChanged = () => {
       if (activeMode !== 'home') return;
-      void loadProjects();
-      void loadSessions(selectedProject);
+      // Parallel refresh of both lists after a tag/reindex (async-parallel).
+      void Promise.all([loadProjects(), loadSessions(selectedProject)]);
     };
     window.addEventListener(SESSIONS_CHANGED_EVENT, onChanged);
     return () => window.removeEventListener(SESSIONS_CHANGED_EVENT, onChanged);
@@ -156,19 +199,28 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
   };
 
   /** Open a conversation in the main pane (Browse route + session query). */
-  const handleSelectSession = (id: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('session', id);
-    // Stay on home even if we somehow landed here from another route.
-    if (activeMode !== 'home') {
-      navigate(`/app/home?session=${encodeURIComponent(id)}`);
-      return;
-    }
-    setSearchParams(next, { replace: true });
-  };
+  const handleSelectSession = useCallback(
+    (id: string) => {
+      // Stay on home even if we somehow landed here from another route.
+      if (activeMode !== 'home') {
+        navigate(`/app/home?session=${encodeURIComponent(id)}`);
+        return;
+      }
+      // Non-urgent list selection keeps sidebar input snappy (rerender-transitions).
+      startTransition(() => {
+        const next = new URLSearchParams(searchParams);
+        next.set('session', id);
+        setSearchParams(next, { replace: true });
+      });
+    },
+    [activeMode, navigate, searchParams, setSearchParams],
+  );
 
   const handleSelectProject = (value: string | null) => {
-    setSelectedProject(value ?? ALL_PROJECTS);
+    const nextProject = value ?? ALL_PROJECTS;
+    startTransition(() => {
+      setSelectedProject(nextProject);
+    });
     // Clear open conversation when the filter changes so the list doesn't lie.
     if (selectedSessionId) {
       const next = new URLSearchParams(searchParams);
@@ -179,12 +231,20 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
 
   const activeSessionSort =
     SESSION_SORTS.find((s) => s.value === sessionSort) ?? SESSION_SORTS[0];
-  const sortedProjects = [...projects].sort(
-    (a, b) => activeSessionSort.getProject(b) - activeSessionSort.getProject(a),
-  );
-  const sortedSessions = [...sessions].sort(
-    (a, b) => activeSessionSort.get(b) - activeSessionSort.get(a),
-  );
+  // Memoize sorts so typing/route noise doesn't re-sort ~800 sessions every render.
+  const sortedProjects = useMemo(() => {
+    const rows = projects.slice();
+    rows.sort(
+      (a, b) => activeSessionSort.getProject(b) - activeSessionSort.getProject(a),
+    );
+    return rows;
+  }, [projects, activeSessionSort]);
+  const sortedSessions = useMemo(() => {
+    const rows = sessions.slice();
+    rows.sort((a, b) => activeSessionSort.get(b) - activeSessionSort.get(a));
+    return rows;
+  }, [sessions, activeSessionSort]);
+  const showProjectOnRows = selectedProject === ALL_PROJECTS;
 
   return (
     <SidebarRoot collapsible="icon" variant={variant} {...props}>
@@ -310,39 +370,15 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
                 !sessionsError &&
                 sessions.length > 0 ? (
                   <ul className="flex flex-col gap-0.5">
-                    {sortedSessions.map((session) => {
-                      const isSelected = session.id === selectedSessionId;
-                      const title = (session.summary || '').trim() || 'Untitled conversation';
-                      // When browsing all projects, show which folder the session belongs to.
-                      const showProject = selectedProject === ALL_PROJECTS;
-                      const projectLabel = showProject ? folderName(session) : '';
-                      const timeLabel = relativeTime(session.last_ts);
-                      const meta = [projectLabel, timeLabel].filter(Boolean).join(' · ');
-                      return (
-                        <li key={session.id}>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectSession(session.id)}
-                            aria-current={isSelected ? 'true' : undefined}
-                            aria-label={`${title}${meta ? `, ${meta}` : ''}`}
-                            className={cn(
-                              'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
-                              'hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                              isSelected && 'bg-accent',
-                            )}
-                          >
-                            <span className="w-full truncate text-sm text-foreground">
-                              {title}
-                            </span>
-                            {meta ? (
-                              <span className="w-full truncate text-xs text-muted-foreground">
-                                {meta}
-                              </span>
-                            ) : null}
-                          </button>
-                        </li>
-                      );
-                    })}
+                    {sortedSessions.map((session) => (
+                      <SessionRow
+                        key={session.id}
+                        session={session}
+                        isSelected={session.id === selectedSessionId}
+                        showProject={showProjectOnRows}
+                        onSelect={handleSelectSession}
+                      />
+                    ))}
                   </ul>
                 ) : null}
               </div>
@@ -383,7 +419,9 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
 
             <Select
               value={sessionSort}
-              onValueChange={(value) => setSessionSort(value ?? 'recent')}
+              onValueChange={(value) => {
+                startTransition(() => setSessionSort(value ?? 'recent'));
+              }}
             >
               <SelectTrigger className="w-full" aria-label="Sort conversations by" size="sm">
                 <SelectValue placeholder="Sort by" />

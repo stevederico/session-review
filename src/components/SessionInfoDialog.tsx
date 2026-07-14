@@ -2,7 +2,7 @@
  * Modal with metadata for the open conversation (cwd, source, branch, model,
  * cost, project tag, resume command) — content formerly in the Browse header.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
@@ -111,7 +111,11 @@ export default function SessionInfoDialog({
     .split(',')
     .map((m) => shortModel(m.trim()))
     .filter(Boolean);
-  const projectsByName = [...projects].sort((a, b) => a.name.localeCompare(b.name));
+  const projectsByName = useMemo(() => {
+    const rows = projects.slice();
+    rows.sort((a, b) => a.name.localeCompare(b.name));
+    return rows;
+  }, [projects]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
