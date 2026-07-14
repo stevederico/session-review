@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.0
+
+  Fix empty company fields
+
 ## 0.21.0
 
   Drop skateboard scaffold junk
