@@ -261,7 +261,7 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
                         <DynamicIcon
                           name={activeModeMeta.icon}
                           strokeWidth={2}
-                          className="text-white"
+                          className="text-background"
                         />
                       </div>
                       <span className="min-w-0 shrink truncate text-lg font-semibold">

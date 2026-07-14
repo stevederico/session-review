@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.41.0
+
+  Black app accent color
+
 ## 0.40.0
 
   Simpler selected convo style
