@@ -20,6 +20,13 @@ npm-debug.log*
 .env
 .env.*
 
+# Local session index (personal transcripts — never bake into images)
+backend/databases/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
 # Build artifacts
 dist/
 build/

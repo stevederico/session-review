@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.64.0
+
+  Dockerignore session databases
+
 ## 0.63.0
 
   Simplify ResumeKey composition
