@@ -30,12 +30,6 @@ export interface ReindexResult {
   changed: number;
 }
 
-/** Result of setting/clearing a manual session→project override. */
-export interface OverrideResult {
-  id: string;
-  project_key: string | null;
-}
-
 /** Full session detail: metadata row plus normalized transcript records. */
 export interface SessionDetail {
   meta: Record<string, unknown>;
@@ -81,10 +75,6 @@ export function grokUpdatesToRecords(sessionDir: string): Record<string, unknown
 export function reindex(force?: boolean): ReindexResult;
 
 export function projects(): Record<string, unknown>[];
-
-export function setOverride(id: string, projectKey: string | null): OverrideResult;
-
-export function listOverrides(): Record<string, unknown>[];
 
 export function sessions(project?: string): Record<string, unknown>[];
 

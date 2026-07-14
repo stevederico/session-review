@@ -55,13 +55,10 @@ export interface SessionDetail {
 /** Sentinel value for the "All projects" Select option (no project filter). */
 export const ALL_PROJECTS = '__all__';
 
-/** Sentinel for the tag control's "Auto-detect" option (clears any override). */
-export const AUTO_DETECT = '__auto__';
-
 /** Window event name: sidebar should refetch the session list. */
 export const SESSIONS_CHANGED_EVENT = 'sr:sessions-changed';
 
-/** Notify listeners (AppSidebar) that the session list may be stale. */
+/** Notify listeners (AppSidebar) that the session list may be stale (e.g. after reindex). */
 export function notifySessionsChanged(): void {
   window.dispatchEvent(new Event(SESSIONS_CHANGED_EVENT));
 }

@@ -1538,20 +1538,6 @@ app.get('/api/cc/stats', async (c) => {
   }
 });
 
-/** POST /api/cc/tag — manually assign (or clear) a session's project override */
-app.post('/api/cc/tag', async (c) => {
-  try {
-    const body = await c.req.json().catch(() => ({}));
-    const { id, project } = body || {};
-    if (!id) return c.json({ error: 'id required' }, 400);
-    const result = cc.setOverride(id, project ?? null);
-    return c.json(result);
-  } catch (e: any) {
-    logger.error('cc/tag failed', { error: e?.message });
-    return c.json({ error: 'Failed to tag session' }, 500);
-  }
-});
-
 /** POST /api/cc/reindex — force full re-scan (used by Settings > Transcripts Refresh) */
 app.post('/api/cc/reindex', async (c) => {
   try {

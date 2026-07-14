@@ -1,7 +1,7 @@
 {
   "name": "session-review",
   "private": false,
-  "version": "0.64.0",
+  "version": "0.65.0",
   "skateboardVersion": "4.11.0",
   "type": "module",
   "workspaces": [
@@ -21,11 +21,10 @@
     "test:watch": "npm run --workspace=backend test:watch",
     "typecheck": "tsc -p tsconfig.json && tsc -p backend/tsconfig.json",
     "test:backend": "npm run test --workspace=backend",
-    "test:frontend": "vitest run --passWithNoTests && node --test src/lib/*.test.ts",
+    "test:frontend": "node --test src/lib/*.test.ts",
     "test:build": "node --experimental-test-module-mocks --test vite.plugins.test.js scripts/verify-ui-version.test.js",
-    "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend && npm run test:coverage:build",
+    "test:coverage": "npm run test:coverage:backend && npm run test:coverage:build",
     "test:coverage:backend": "node --experimental-test-module-mocks --experimental-test-coverage --test-concurrency=1 --test backend/server.test.ts backend/server.lifecycle.test.js backend/server.prod-import.test.js backend/adapters/*.test.js backend/lib/*.test.js",
-    "test:coverage:frontend": "vitest run --coverage",
     "test:coverage:build": "node --experimental-test-module-mocks --experimental-test-coverage --test vite.plugins.test.js scripts/verify-ui-version.test.js"
   },
   "dependencies": {
@@ -36,18 +35,13 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.0",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
     "@types/node": "25.9.1",
     "@types/react": "19.2.16",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react-swc": "4.3.1",
-    "@vitest/coverage-v8": "^3.2.4",
-    "jsdom": "^26.1.0",
     "tailwindcss": "4.3.0",
     "typescript": "6.0.3",
-    "vite": "8.0.13",
-    "vitest": "^3.2.4"
+    "vite": "8.0.13"
   },
   "engines": {
     "node": ">=24.0.0"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.65.0
+
+  Drop dead tag API
+  Drop unused Vitest stack
+  Reindex refreshes sidebar
+
 ## 0.64.0
 
   Dockerignore session databases

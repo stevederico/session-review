@@ -12,6 +12,7 @@ import {
   CardAction,
 } from '@stevederico/skateboard-ui/shadcn/ui/card';
 import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
+import { notifySessionsChanged } from '../lib/sessionTypes';
 
 /**
  * App settings: the skateboard-ui shell settings (account, billing, theme)
@@ -37,6 +38,7 @@ export default function SettingsView() {
       const files = result?.files ?? 0;
       const changed = result?.changed ?? 0;
       setStatus(`Reindexed ${files} session${files === 1 ? '' : 's'}, ${changed} changed.`);
+      notifySessionsChanged();
     } catch (err) {
       console.error('Reindex failed', err);
       setStatus('Reindex failed. Check that the local server is running.');

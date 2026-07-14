@@ -819,29 +819,6 @@ export function projects() {
 }
 
 /**
- * Manually assign a session to a project, or clear the assignment.
- * @param {string} id
- * @param {?string} projectKey
- * @returns {{id: string, project_key: string|null}}
- */
-export function setOverride(id, projectKey) {
-  const d = getDb();
-  if (!projectKey) {
-    d.prepare('DELETE FROM session_overrides WHERE id = ?').run(id);
-    return { id, project_key: null };
-  }
-  d.prepare('INSERT OR REPLACE INTO session_overrides (id, project_key) VALUES (?, ?)')
-    .run(id, projectKey);
-  return { id, project_key: projectKey };
-}
-
-/** List all manual session→project assignments. */
-export function listOverrides() {
-  const d = getDb();
-  return d.prepare('SELECT id, project_key FROM session_overrides').all();
-}
-
-/**
  * List sessions, optionally filtered to one canonical project.
  * @param {string} [project]
  * @returns {object[]}
