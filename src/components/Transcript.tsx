@@ -327,6 +327,10 @@ function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) 
   );
 }
 
+/** Shared chrome for assistant row labels (Assistant / Thinking / Tools). */
+const ROW_LABEL =
+  'flex w-fit max-w-full items-center gap-2 rounded text-base text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
 /** Collapsed-by-default disclosure for the assistant's thinking trace. */
 function ThinkingDisclosure({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -336,14 +340,14 @@ function ThinkingDisclosure({ text }: { text: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-fit items-center gap-1.5 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className={ROW_LABEL}
       >
-        <Brain size={SMALL_ICON_SIZE} aria-hidden="true" />
-        <span>Thinking</span>
+        <Brain size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
+        <span className="font-medium text-foreground">Thinking</span>
         <ChevronRight
-          size={SMALL_ICON_SIZE}
+          size={ICON_SIZE}
           aria-hidden="true"
-          className={cn('transition-transform motion-safe:duration-200', open && 'rotate-90')}
+          className={cn('shrink-0 transition-transform motion-safe:duration-200', open && 'rotate-90')}
         />
       </button>
       {open ? (
@@ -376,21 +380,21 @@ function ToolsDisclosure({ tools }: { tools: ToolCall[] }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-fit max-w-full items-center gap-1.5 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className={ROW_LABEL}
       >
-        <Wrench size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0" />
-        <span className="shrink-0 font-medium">{label}</span>
+        <Wrench size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
+        <span className="shrink-0 font-medium text-foreground">{label}</span>
         {!open && names ? (
-          <span className="min-w-0 truncate text-muted-foreground/80">
+          <span className="min-w-0 truncate text-muted-foreground">
             · {names}
             {more}
           </span>
         ) : null}
         {hasError ? (
-          <X size={SMALL_ICON_SIZE} aria-label="Includes errors" className="shrink-0 text-destructive" />
+          <X size={ICON_SIZE} aria-label="Includes errors" className="shrink-0 text-destructive" />
         ) : null}
         <ChevronRight
-          size={SMALL_ICON_SIZE}
+          size={ICON_SIZE}
           aria-hidden="true"
           className={cn(
             'shrink-0 transition-transform motion-safe:duration-200',
@@ -545,8 +549,8 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
 
   return (
     <div className="group/message flex flex-col gap-3 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
-      <div className="flex items-center gap-2 text-sm">
-        <Sparkles size={ICON_SIZE} aria-hidden="true" className="text-app" />
+      <div className="flex w-full items-center gap-2 text-base">
+        <Sparkles size={ICON_SIZE} aria-hidden="true" className="shrink-0 text-app" />
         <span className="font-medium text-foreground">Assistant</span>
         {model ? (
           <span className="text-muted-foreground">{shortModel(model)}</span>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.50.0
+
+  Match assistant row label chrome
+
 ## 0.49.0
 
   Foldable tool call group
