@@ -70,14 +70,38 @@ export default function SessionInfoDialog({
     .map((m) => shortModel(m.trim()))
     .filter(Boolean);
 
+  const pills =
+    meta && !loading && !error ? (
+      <>
+        {meta.source ? <Badge variant="secondary">{meta.source}</Badge> : null}
+        {meta.git_branch ? <Badge variant="outline">{meta.git_branch}</Badge> : null}
+        {models.map((m) => (
+          <Badge key={m} variant="secondary">
+            {m}
+          </Badge>
+        ))}
+        {typeof meta.msg_count === 'number' ? (
+          <Badge variant="outline">{meta.msg_count} msgs</Badge>
+        ) : null}
+        <Badge variant="outline">{formatCost(meta.cost)}</Badge>
+      </>
+    ) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="w-full max-w-[calc(100%-2rem)] overflow-hidden sm:max-w-lg"
         showCloseButton
       >
-        <DialogHeader className="min-w-0 pr-8">
-          <DialogTitle>Conversation info</DialogTitle>
+        <DialogHeader className="min-w-0 space-y-0 pr-8">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
+            <DialogTitle className="shrink-0">Conversation info</DialogTitle>
+            {pills ? (
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+                {pills}
+              </div>
+            ) : null}
+          </div>
         </DialogHeader>
 
         {!sessionId ? (
@@ -108,20 +132,6 @@ export default function SessionInfoDialog({
                 {meta.cwd}
               </p>
             ) : null}
-
-            <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
-              {meta.source ? <Badge variant="secondary">{meta.source}</Badge> : null}
-              {meta.git_branch ? <Badge variant="outline">{meta.git_branch}</Badge> : null}
-              {models.map((m) => (
-                <Badge key={m} variant="secondary">
-                  {m}
-                </Badge>
-              ))}
-              {typeof meta.msg_count === 'number' ? (
-                <Badge variant="outline">{meta.msg_count} msgs</Badge>
-              ) : null}
-              <Badge variant="outline">{formatCost(meta.cost)}</Badge>
-            </div>
 
             <div className="min-w-0 max-w-full">
               <ResumeKey

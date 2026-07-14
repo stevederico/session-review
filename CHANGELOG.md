@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.0
+
+  Info pills beside title
+
 ## 0.44.0
 
   Auto-hide overlay scrollbars
