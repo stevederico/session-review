@@ -498,12 +498,21 @@ function ToolPill({ tool }: { tool: ToolCall }) {
   );
 }
 
-/** Hover-only copy control under an assistant turn (no repeated model label). */
-function AssistantActions({ text, usage }: { text: string; usage: Usage | null }) {
+/** Hover-only meta under an assistant turn: copy, time, optional tokens. */
+function AssistantActions({
+  text,
+  usage,
+  timestamp,
+}: {
+  text: string;
+  usage: Usage | null;
+  timestamp?: string;
+}) {
   const { copied, copy } = useCopy();
   const CopyIcon = copied ? Check : Copy;
   const tokens = usage?.output_tokens;
-  if (!text && !(Number(tokens) > 0)) return null;
+  const time = formatMessageTime(timestamp);
+  if (!text && !(Number(tokens) > 0) && !time) return null;
 
   return (
     <div
@@ -531,6 +540,7 @@ function AssistantActions({ text, usage }: { text: string; usage: Usage | null }
           </span>
         </button>
       ) : null}
+      {time ? <span className={META}>{time}</span> : null}
       {Number(tokens) > 0 ? (
         <span className="tabular-nums">{formatTokens(tokens)} tokens</span>
       ) : null}
@@ -543,7 +553,7 @@ type AssistantMessage = Extract<Message, { role: 'assistant' }>;
 
 /** Full-width, no-bubble assistant turn: quiet header, tools, then response. */
 function MessageAssistant({ message }: { message: AssistantMessage }) {
-  const { thinking, items, usage } = message;
+  const { thinking, items, usage, timestamp } = message;
   // Tools first, then prose — tools are the work; the reply summarizes after.
   const toolItems = items.filter(
     (item): item is Extract<AssistantItem, { kind: 'tool' }> => item.kind === 'tool',
@@ -574,7 +584,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
         </div>
       ) : null}
 
-      <AssistantActions text={assistantText} usage={usage} />
+      <AssistantActions text={assistantText} usage={usage} timestamp={timestamp} />
     </div>
   );
 }

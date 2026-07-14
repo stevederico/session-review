@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.55.0
+
+  Timestamp with hover copy
+
 ## 0.54.0
 
   Drop assistant header timestamp
