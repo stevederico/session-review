@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.0
+
+  Clearer selected sidebar convo
+
 ## 0.33.0
 
   Contain info modal overflow
