@@ -95,9 +95,10 @@ const SessionRow = memo(function SessionRow({
         aria-current={isSelected ? 'true' : undefined}
         aria-label={`${title}${meta ? `, ${meta}` : ''}${isSelected ? ', selected' : ''}`}
         className={cn(
-          'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
+          'flex w-full flex-col gap-0.5 px-2 py-2 text-left outline-none transition-colors',
           'focus-visible:ring-[3px] focus-visible:ring-ring/50',
           // Solid secondary surface — clear vs idle, not inverted black.
+          // No rounded corners on selection (sharp fill reads cleaner in the list).
           isSelected
             ? 'bg-surface-tertiary text-foreground hover:bg-surface-tertiary'
             : 'text-foreground hover:bg-accent',

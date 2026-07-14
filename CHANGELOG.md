@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.59.0
+
+  Square selected sidebar row
+
 ## 0.58.0
 
   Softer selected sidebar row
