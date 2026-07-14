@@ -139,7 +139,6 @@ export default function SessionInfoDialog({
                 cwd={meta.cwd}
                 source={meta.source}
                 className="max-w-full"
-                wrap
               />
             </div>
           </div>

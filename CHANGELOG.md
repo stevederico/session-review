@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.63.0
+
+  Simplify ResumeKey composition
+
 ## 0.62.0
 
   Auto-scroll to conversation end
