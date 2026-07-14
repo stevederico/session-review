@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useDeferredValue } from 'react';
+import { memo, useMemo, useState, useDeferredValue, useLayoutEffect, useRef } from 'react';
 import type { ReactElement } from 'react';
 import type { IconProps } from '@stevederico/skateboard-ui/icons';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
@@ -624,6 +624,7 @@ interface TranscriptProps {
  */
 export default function Transcript({ records, meta }: TranscriptProps) {
   void meta; // accepted for a stable caller signature; layout needs only records
+  const bottomRef = useRef<HTMLDivElement>(null);
   // Derive once per records change — deriveMessages walks every record and the
   // children re-parse markdown, so re-running it on unrelated re-renders (search
   // typing, scroll) freezes large sessions.
@@ -634,6 +635,13 @@ export default function Transcript({ records, meta }: TranscriptProps) {
   // Defer the (potentially huge) message list so urgent updates (search typing,
   // scroll) stay responsive while the heavy transcript re-renders in the background.
   const deferredMessages = useDeferredValue(messages);
+
+  // Jump to the latest message when a conversation is opened / finishes deriving.
+  useLayoutEffect(() => {
+    if (deferredMessages.length === 0) return;
+    bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'instant' });
+  }, [deferredMessages]);
+
   if (deferredMessages.length === 0) return null;
 
   return (
@@ -644,6 +652,7 @@ export default function Transcript({ records, meta }: TranscriptProps) {
           return <MessageUser key={i} text={message.text} timestamp={message.timestamp} />;
         return <MessageAssistant key={i} message={message} />;
       })}
+      <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
     </div>
   );
 }

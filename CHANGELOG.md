@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.62.0
+
+  Auto-scroll to conversation end
+
 ## 0.61.0
 
   Memo transcript turns
