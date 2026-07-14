@@ -32,7 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@stevederico/skateboard-ui/shadcn/ui/select';
-import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
 import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
 import {
@@ -47,14 +46,12 @@ import ChevronDown from '@stevederico/skateboard-ui/icons/ChevronDown';
 import Check from '@stevederico/skateboard-ui/icons/Check';
 import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
-import { formatCost, formatTokens, relativeTime, folderName } from '../lib/format';
-import ResumeKey from './ResumeKey';
+import { relativeTime, folderName } from '../lib/format';
 import {
   ALL_PROJECTS,
   APP_MODES,
   SESSION_SORTS,
   SESSIONS_CHANGED_EVENT,
-  tokensOf,
   type AppModeValue,
   type Project,
   type Session,
@@ -315,47 +312,34 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
                   <ul className="flex flex-col gap-0.5">
                     {sortedSessions.map((session) => {
                       const isSelected = session.id === selectedSessionId;
+                      const title = (session.summary || '').trim() || 'Untitled conversation';
+                      // When browsing all projects, show which folder the session belongs to.
+                      const showProject = selectedProject === ALL_PROJECTS;
+                      const projectLabel = showProject ? folderName(session) : '';
+                      const timeLabel = relativeTime(session.last_ts);
+                      const meta = [projectLabel, timeLabel].filter(Boolean).join(' · ');
                       return (
-                        <li key={session.id} className="group/session relative">
+                        <li key={session.id}>
                           <button
                             type="button"
                             onClick={() => handleSelectSession(session.id)}
                             aria-current={isSelected ? 'true' : undefined}
+                            aria-label={`${title}${meta ? `, ${meta}` : ''}`}
                             className={cn(
-                              'flex w-full flex-col gap-1 rounded-md px-2 py-2.5 text-left outline-none transition-colors',
+                              'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
                               'hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
                               isSelected && 'bg-accent',
                             )}
                           >
-                            <span className="flex w-full items-center justify-between gap-x-1 text-[11px] text-muted-foreground">
-                              <span className="flex min-w-0 items-center gap-1">
-                                <span className="truncate font-semibold">
-                                  {folderName(session)}
-                                </span>
-                                {session.source === 'grok' || session.source === 'claude' ? (
-                                  <Badge variant="outline" className="shrink-0 px-1 py-0 text-[10px]">
-                                    {session.source}
-                                  </Badge>
-                                ) : null}
+                            <span className="w-full truncate text-sm text-foreground">
+                              {title}
+                            </span>
+                            {meta ? (
+                              <span className="w-full truncate text-xs text-muted-foreground">
+                                {meta}
                               </span>
-                              <span className="shrink-0">{relativeTime(session.last_ts)}</span>
-                            </span>
-                            <span className="w-full truncate text-xs text-foreground">
-                              {session.summary || '(no summary)'}
-                            </span>
-                            <span className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
-                              <span>{session.msg_count} msgs</span>
-                              <span>{formatTokens(tokensOf(session))}</span>
-                              <span>{formatCost(session.cost)}</span>
-                            </span>
+                            ) : null}
                           </button>
-                          <ResumeKey
-                            id={session.id}
-                            cwd={session.cwd}
-                            source={session.source}
-                            variant="compact"
-                            className="absolute top-2 right-1 rounded bg-accent opacity-0 group-hover/session:opacity-100 focus-visible:opacity-100"
-                          />
                         </li>
                       );
                     })}

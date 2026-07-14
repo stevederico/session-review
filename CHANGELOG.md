@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.0
+
+  Simplify sidebar conversation rows
+
 ## 0.27.0
 
   Full-width borderless search bar
