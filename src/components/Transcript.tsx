@@ -355,6 +355,60 @@ function ThinkingDisclosure({ text }: { text: string }) {
   );
 }
 
+/**
+ * Group fold for all tool calls in an assistant turn (same pattern as thinking).
+ * Collapsed by default; opens when any tool errored so failures aren't hidden.
+ */
+function ToolsDisclosure({ tools }: { tools: ToolCall[] }) {
+  const hasError = tools.some((t) => t.isError);
+  const [open, setOpen] = useState(hasError);
+  const count = tools.length;
+  const label = count === 1 ? '1 tool call' : `${count} tool calls`;
+  const names = tools
+    .slice(0, 3)
+    .map((t) => String(t.name).replace(/_/g, ' '))
+    .join(', ');
+  const more = count > 3 ? ` +${count - 3}` : '';
+
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-fit max-w-full items-center gap-1.5 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        <Wrench size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0" />
+        <span className="shrink-0 font-medium">{label}</span>
+        {!open && names ? (
+          <span className="min-w-0 truncate text-muted-foreground/80">
+            · {names}
+            {more}
+          </span>
+        ) : null}
+        {hasError ? (
+          <X size={SMALL_ICON_SIZE} aria-label="Includes errors" className="shrink-0 text-destructive" />
+        ) : null}
+        <ChevronRight
+          size={SMALL_ICON_SIZE}
+          aria-hidden="true"
+          className={cn(
+            'shrink-0 transition-transform motion-safe:duration-200',
+            open && 'rotate-90',
+          )}
+        />
+      </button>
+      {open ? (
+        <div className="flex flex-col gap-2 motion-safe:animate-in motion-safe:fade-in">
+          {tools.map((tool, i) => (
+            <ToolPill key={tool.id ?? i} tool={tool} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Expandable capsule showing one tool call's input and (when present) result. */
 function ToolPill({ tool }: { tool: ToolCall }) {
   const { name, input, result, isError } = tool;
@@ -505,11 +559,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
 
       {toolItems.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {toolItems.map((item, i) => (
-            <ToolPill key={item.tool.id ?? i} tool={item.tool} />
-          ))}
-        </div>
+        <ToolsDisclosure tools={toolItems.map((item) => item.tool)} />
       ) : null}
 
       {textItems.length > 0 ? (

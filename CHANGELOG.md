@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.49.0
+
+  Foldable tool call group
+
 ## 0.48.0
 
   Larger transcript type
