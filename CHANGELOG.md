@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.48.0
+
+  Larger transcript type
+  Wider conversation pane
+  Tools above response text
+
 ## 0.47.0
 
   Unify conversation typography

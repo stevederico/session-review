@@ -76,14 +76,14 @@ function inline(text: string): ReactNode[] {
 }
 
 // --- block components --------------------------------------------------------
-// Chat-scale headings: stay within ~text-sm body, never jump to display sizes.
+// Chat-scale headings: sit just above body (text-base), not display type.
 const HEADING_CLASSES: Record<number, string> = {
-  1: 'text-base',
-  2: 'text-sm',
-  3: 'text-sm',
-  4: 'text-sm',
-  5: 'text-xs',
-  6: 'text-xs',
+  1: 'text-lg',
+  2: 'text-base',
+  3: 'text-base',
+  4: 'text-base',
+  5: 'text-sm',
+  6: 'text-sm',
 };
 
 /** Render a heading token as the matching h1..h6 element. */
@@ -91,7 +91,7 @@ function Heading({ level, text }: { level: number; text: string }): ReactNode {
   return h(
     `h${level}`,
     {
-      className: `${HEADING_CLASSES[level] ?? 'text-sm'} font-sans font-semibold tracking-tight mt-4 mb-1.5 first:mt-0`,
+      className: `${HEADING_CLASSES[level] ?? 'text-base'} font-sans font-semibold tracking-tight mt-4 mb-1.5 first:mt-0`,
     },
     inline(text),
   );
@@ -104,7 +104,7 @@ function List({ ordered, items }: { ordered: boolean; items: ListItem[] }): Reac
   return h(
     Tag,
     {
-      className: `${ordered ? 'list-decimal' : 'list-disc'} ${isTaskList ? 'list-none pl-0' : 'pl-5'} my-2 space-y-1 text-sm leading-relaxed`,
+      className: `${ordered ? 'list-decimal' : 'list-disc'} ${isTaskList ? 'list-none pl-0' : 'pl-5'} my-2 space-y-1 text-base leading-relaxed`,
     },
     items.map((item, idx) => {
       // A nested sub-list (already a {type:'list',...} token) renders recursively;
@@ -143,7 +143,7 @@ function Table({ header, rows }: { header: string[]; rows: string[][] }): ReactN
     { className: 'my-3 overflow-x-auto' },
     h(
       'table',
-      { className: 'w-full text-sm leading-relaxed' },
+      { className: 'w-full text-base leading-relaxed' },
       h(
         'thead',
         null,
@@ -191,7 +191,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
       'div',
       {
         className:
-          'flex items-center justify-between bg-muted px-3 py-1.5 text-xs text-muted-foreground',
+          'flex items-center justify-between bg-muted px-3 py-1.5 text-sm text-muted-foreground',
       },
       h('span', { className: 'font-mono' }, (lang || 'text').toLowerCase()),
       h(
@@ -211,7 +211,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }): ReactNode {
       { className: 'overflow-x-auto bg-card p-3' },
       h(
         'code',
-        { className: 'font-mono text-xs leading-relaxed whitespace-pre' },
+        { className: 'font-mono text-sm leading-relaxed whitespace-pre' },
         code,
       ),
     ),
@@ -235,7 +235,7 @@ function renderBlock(token: BlockToken, key: string): ReactNode {
         {
           key,
           className:
-            'my-2 border-l-2 border-border bg-muted/40 py-1 pl-3 text-sm leading-relaxed text-muted-foreground',
+            'my-2 border-l-2 border-border bg-muted/40 py-1 pl-3 text-base leading-relaxed text-muted-foreground',
         },
         inline(token.text),
       );
@@ -247,7 +247,7 @@ function renderBlock(token: BlockToken, key: string): ReactNode {
         {
           key,
           className:
-            'my-1.5 text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground first:mt-0 last:mb-0',
+            'my-1.5 text-base leading-relaxed whitespace-pre-wrap break-words text-foreground first:mt-0 last:mb-0',
         },
         inline(token.text),
       );
