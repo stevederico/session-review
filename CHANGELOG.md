@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.0
+
+  Convo click leaves Settings
+
 ## 0.34.0
 
   Clearer selected sidebar convo

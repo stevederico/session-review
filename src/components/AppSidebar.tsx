@@ -217,22 +217,16 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
     }
   };
 
-  /** Open a conversation in the main pane (Browse route + session query). */
+  /** Open a conversation in Browse — leaves Settings/Analytics if needed. */
   const handleSelectSession = useCallback(
     (id: string) => {
-      // Stay on home even if we somehow landed here from another route.
-      if (activeMode !== 'home') {
-        navigate(`/app/home?session=${encodeURIComponent(id)}`);
-        return;
-      }
-      // Non-urgent list selection keeps sidebar input snappy (rerender-transitions).
+      // Always go to /app/home so Settings (and Analytics) close and the
+      // transcript pane mounts with this session selected.
       startTransition(() => {
-        const next = new URLSearchParams(searchParams);
-        next.set('session', id);
-        setSearchParams(next, { replace: true });
+        navigate(`/app/home?session=${encodeURIComponent(id)}`);
       });
     },
-    [activeMode, navigate, searchParams, setSearchParams],
+    [navigate],
   );
 
   const handleSelectProject = (value: string | null) => {
