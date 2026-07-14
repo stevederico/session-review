@@ -254,44 +254,7 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
         {activeMode === 'home' ? (
           <SidebarGroup className="flex min-h-0 flex-1 flex-col p-0">
             <SidebarGroupContent className="flex min-h-0 flex-1 flex-col">
-              <div className="flex shrink-0 flex-col gap-2 p-2 group-data-[collapsible=icon]:hidden">
-                <Select value={selectedProject} onValueChange={handleSelectProject}>
-                  <SelectTrigger
-                    className="w-full"
-                    aria-label="Filter by project"
-                    size="sm"
-                    disabled={projectsLoading || !!projectsError}
-                  >
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
-                    {sortedProjects.map((p) => (
-                      <SelectItem key={p.project} value={p.project}>
-                        {p.name} ({p.sessions})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={sessionSort}
-                  onValueChange={(value) => setSessionSort(value ?? 'recent')}
-                >
-                  <SelectTrigger className="w-full" aria-label="Sort conversations by" size="sm">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SESSION_SORTS.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 group-data-[collapsible=icon]:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2 pb-2 group-data-[collapsible=icon]:hidden">
                 {projectsLoading || sessionsLoading ? (
                   <div className="flex justify-center p-6">
                     <Spinner />
@@ -412,7 +375,45 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="gap-2">
+        {activeMode === 'home' ? (
+          <div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
+            <Select value={selectedProject} onValueChange={handleSelectProject}>
+              <SelectTrigger
+                className="w-full"
+                aria-label="Filter by project"
+                size="sm"
+                disabled={projectsLoading || !!projectsError}
+              >
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
+                {sortedProjects.map((p) => (
+                  <SelectItem key={p.project} value={p.project}>
+                    {p.name} ({p.sessions})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={sessionSort}
+              onValueChange={(value) => setSessionSort(value ?? 'recent')}
+            >
+              <SelectTrigger className="w-full" aria-label="Sort conversations by" size="sm">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {SESSION_SORTS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton

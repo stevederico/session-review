@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.0
+
+  Move filters above Settings
+
 ## 0.24.0
 
   Conversations in app sidebar
