@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.0
+
+  Hide search on Settings
+
 ## 0.28.0
 
   Simplify sidebar conversation rows

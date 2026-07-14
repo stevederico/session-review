@@ -3,7 +3,7 @@
  * Browse/Analytics mode picker in the header, search above main content.
  */
 import type { CSSProperties } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import TabBar from '@stevederico/skateboard-ui/TabBar';
 import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
 import { getState } from '@stevederico/skateboard-ui/Context';
@@ -13,15 +13,18 @@ import HeaderSearch from './HeaderSearch';
 /**
  * Layout override for createSkateboardApp.
  * Sidebar holds the mode picker + conversations; search sits above the
- * main content outlet; main pane is the active route.
+ * main content outlet (hidden on Settings); main pane is the active route.
  */
 export default function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = getState();
   const { sidebarVisible, tabBarVisible } = state.ui;
   const constants = state.constants;
   const showSidebar = !constants.hideSidebar && sidebarVisible;
   const showTabBar = !constants.hideTabBar && tabBarVisible;
+  // Conversation search is for Browse/Analytics only — not Settings chrome.
+  const showSearch = !location.pathname.toLowerCase().includes('/settings');
 
   const sidebarStyle: CSSProperties & Record<`--${string}`, string> = {
     // Wider than skateboard default (12rem) so conversation rows fit.
@@ -48,12 +51,14 @@ export default function AppLayout() {
           id="main"
           className={`flex min-h-0 flex-col border border-border/50 ${constants.hideSidebarInsetRounding ? 'md:peer-data-[variant=inset]:rounded-none' : ''}`}
         >
-          <header className="flex h-(--header-height) w-full shrink-0 items-stretch border-b border-border">
-            <HeaderSearch
-              onSelect={handleSelectSession}
-              className="h-full w-full min-w-0"
-            />
-          </header>
+          {showSearch ? (
+            <header className="flex h-(--header-height) w-full shrink-0 items-stretch border-b border-border">
+              <HeaderSearch
+                onSelect={handleSelectSession}
+                className="h-full w-full min-w-0"
+              />
+            </header>
+          ) : null}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <Outlet />
           </div>
