@@ -97,12 +97,22 @@ const SessionRow = memo(function SessionRow({
         className={cn(
           'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
           'focus-visible:ring-[3px] focus-visible:ring-ring/50',
-          isSelected ? 'bg-muted' : 'hover:bg-accent',
+          // Inverted fill so selection is unmistakable vs sidebar chrome.
+          isSelected
+            ? 'bg-foreground text-background hover:bg-foreground'
+            : 'text-foreground hover:bg-accent',
         )}
       >
-        <span className="w-full truncate text-sm text-foreground">{title}</span>
+        <span className="w-full truncate text-sm font-medium">{title}</span>
         {meta ? (
-          <span className="w-full truncate text-xs text-muted-foreground">{meta}</span>
+          <span
+            className={cn(
+              'w-full truncate text-xs',
+              isSelected ? 'text-background/70' : 'text-muted-foreground',
+            )}
+          >
+            {meta}
+          </span>
         ) : null}
       </button>
     </li>

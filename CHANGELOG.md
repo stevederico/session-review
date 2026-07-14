@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.56.0
+
+  High-contrast selected sidebar row
+
 ## 0.55.0
 
   Timestamp with hover copy
