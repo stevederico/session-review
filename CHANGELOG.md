@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.52.0
+
+  Cleaner message chrome
+  Compact timestamps
+  Drop repeated model labels
+
 ## 0.51.0
 
   Tools folded by default

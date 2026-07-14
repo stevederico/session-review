@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCost, formatTokens, relativeTime, shortModel } from './format.ts';
+import { formatCost, formatTokens, formatMessageTime, relativeTime, shortModel } from './format.ts';
 
 test('formatCost compacts thousands', () => {
   assert.equal(formatCost(1500), '$1.5k');
@@ -45,4 +45,11 @@ test('shortModel strips synthetic suffix', () => {
 test('relativeTime returns "now" for the current moment', () => {
   const nowIso = new Date().toISOString();
   assert.equal(relativeTime(nowIso), 'now');
+});
+
+test('formatMessageTime returns a non-empty clock label for today', () => {
+  const label = formatMessageTime(new Date().toISOString());
+  assert.ok(label.length > 0);
+  // Same-day form is time-only (no month name).
+  assert.equal(/[A-Za-z]{3}/.test(label), false);
 });

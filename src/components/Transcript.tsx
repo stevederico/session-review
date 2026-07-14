@@ -16,7 +16,7 @@ import Check from '@stevederico/skateboard-ui/icons/Check';
 import Copy from '@stevederico/skateboard-ui/icons/Copy';
 import X from '@stevederico/skateboard-ui/icons/X';
 import Markdown from '../lib/markdownRender';
-import { formatDate, shortModel, formatTokens } from '../lib/format';
+import { formatMessageTime, formatTokens } from '../lib/format';
 import { useCopy } from '../lib/useCopy';
 import { stripCommandTags } from '../lib/markdown';
 
@@ -313,23 +313,25 @@ function MessageSystem({ text }: { text: string }) {
   );
 }
 
+/** Compact meta line style (timestamps, secondary chrome). */
+const META = 'text-xs tabular-nums text-muted-foreground';
+
 /** Right-aligned user prompt bubble with a timestamp beneath it. */
 function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) {
+  const time = formatMessageTime(timestamp);
   return (
-    <div className="flex flex-col items-end gap-1.5 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
+    <div className="flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
       <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-br-sm bg-accent px-4 py-3 text-base leading-relaxed text-foreground">
         <Markdown className="break-words text-base leading-relaxed">{text}</Markdown>
       </div>
-      {timestamp ? (
-        <span className="px-1 text-sm text-muted-foreground">{formatDate(timestamp)}</span>
-      ) : null}
+      {time ? <span className={cn('px-1', META)}>{time}</span> : null}
     </div>
   );
 }
 
-/** Shared chrome for assistant row labels (Assistant / Thinking / Tools). */
+/** Shared chrome for assistant secondary rows (Thinking / Tools). */
 const ROW_LABEL =
-  'flex w-fit max-w-full items-center gap-2 rounded text-base text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+  'flex w-fit max-w-full items-center gap-2 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 /** Collapsed-by-default disclosure for the assistant's thinking trace. */
 function ThinkingDisclosure({ text }: { text: string }) {
@@ -342,10 +344,10 @@ function ThinkingDisclosure({ text }: { text: string }) {
         aria-expanded={open}
         className={ROW_LABEL}
       >
-        <Brain size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
-        <span className="font-medium text-foreground">Thinking</span>
+        <Brain size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0" />
+        <span className="font-medium">Thinking</span>
         <ChevronRight
-          size={ICON_SIZE}
+          size={SMALL_ICON_SIZE}
           aria-hidden="true"
           className={cn('shrink-0 transition-transform motion-safe:duration-200', open && 'rotate-90')}
         />
@@ -382,19 +384,19 @@ function ToolsDisclosure({ tools }: { tools: ToolCall[] }) {
         aria-expanded={open}
         className={ROW_LABEL}
       >
-        <Wrench size={ICON_SIZE} aria-hidden="true" className="shrink-0" />
-        <span className="shrink-0 font-medium text-foreground">{label}</span>
+        <Wrench size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0" />
+        <span className="shrink-0 font-medium">{label}</span>
         {!open && names ? (
-          <span className="min-w-0 truncate text-muted-foreground">
+          <span className="min-w-0 truncate opacity-80">
             · {names}
             {more}
           </span>
         ) : null}
         {hasError ? (
-          <X size={ICON_SIZE} aria-label="Includes errors" className="shrink-0 text-destructive" />
+          <X size={SMALL_ICON_SIZE} aria-label="Includes errors" className="shrink-0 text-destructive" />
         ) : null}
         <ChevronRight
-          size={ICON_SIZE}
+          size={SMALL_ICON_SIZE}
           aria-hidden="true"
           className={cn(
             'shrink-0 transition-transform motion-safe:duration-200',
@@ -496,38 +498,42 @@ function ToolPill({ tool }: { tool: ToolCall }) {
   );
 }
 
-/** Muted action row beneath an assistant message: copy + model/token meta. */
-function AssistantActions({ text, model, usage }: { text: string; model: string; usage: Usage | null }) {
+/** Hover-only copy control under an assistant turn (no repeated model label). */
+function AssistantActions({ text, usage }: { text: string; usage: Usage | null }) {
   const { copied, copy } = useCopy();
   const CopyIcon = copied ? Check : Copy;
   const tokens = usage?.output_tokens;
+  if (!text && !(Number(tokens) > 0)) return null;
 
   return (
-    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-      <button
-        type="button"
-        onClick={() => copy(text)}
-        aria-label="Copy message"
-        className={cn(
-          'flex items-center gap-1 rounded p-1 transition-opacity transition-colors',
-          // Show on message hover/focus; stay visible while "Copied" feedback is up.
-          'opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100',
-          'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-          'hover:text-foreground',
-          copied && 'opacity-100 text-success',
-        )}
-      >
-        <CopyIcon
-          size={SMALL_ICON_SIZE}
-          aria-hidden="true"
-          className={copied ? 'text-success' : undefined}
-        />
-        <span className="sr-only" aria-live="polite">
-          {copied ? 'Copied' : ''}
-        </span>
-      </button>
-      {model ? <span>{shortModel(model)}</span> : null}
-      {Number(tokens) > 0 ? <span>{formatTokens(tokens)} tokens</span> : null}
+    <div
+      className={cn(
+        'flex items-center gap-3 text-xs text-muted-foreground transition-opacity',
+        'opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100',
+        copied && 'opacity-100',
+      )}
+    >
+      {text ? (
+        <button
+          type="button"
+          onClick={() => copy(text)}
+          aria-label="Copy message"
+          className={cn(
+            'flex items-center gap-1 rounded p-1 transition-colors',
+            'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+            'hover:text-foreground',
+            copied && 'text-success',
+          )}
+        >
+          <CopyIcon size={SMALL_ICON_SIZE} aria-hidden="true" />
+          <span className="sr-only" aria-live="polite">
+            {copied ? 'Copied' : ''}
+          </span>
+        </button>
+      ) : null}
+      {Number(tokens) > 0 ? (
+        <span className="tabular-nums">{formatTokens(tokens)} tokens</span>
+      ) : null}
     </div>
   );
 }
@@ -535,9 +541,9 @@ function AssistantActions({ text, model, usage }: { text: string; model: string;
 /** The assistant variant of {@link Message}. */
 type AssistantMessage = Extract<Message, { role: 'assistant' }>;
 
-/** Full-width, no-bubble assistant turn: identity, thinking, tools, then response. */
+/** Full-width, no-bubble assistant turn: quiet header, tools, then response. */
 function MessageAssistant({ message }: { message: AssistantMessage }) {
-  const { thinking, items, model, usage, timestamp } = message;
+  const { thinking, items, usage, timestamp } = message;
   // Tools first, then prose — tools are the work; the reply summarizes after.
   const toolItems = items.filter(
     (item): item is Extract<AssistantItem, { kind: 'tool' }> => item.kind === 'tool',
@@ -546,18 +552,14 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
     (item): item is Extract<AssistantItem, { kind: 'text' }> => item.kind === 'text',
   );
   const assistantText = textItems.map((item) => item.text).join('\n\n');
+  const time = formatMessageTime(timestamp);
 
   return (
-    <div className="group/message flex flex-col gap-3 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
-      <div className="flex w-full items-center gap-2 text-base">
-        <Sparkles size={ICON_SIZE} aria-hidden="true" className="shrink-0 text-app" />
-        <span className="font-medium text-foreground">Assistant</span>
-        {model ? (
-          <span className="text-muted-foreground">{shortModel(model)}</span>
-        ) : null}
-        {timestamp ? (
-          <span className="ml-auto text-muted-foreground">{formatDate(timestamp)}</span>
-        ) : null}
+    <div className="group/message flex flex-col gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
+      <div className="flex w-full items-center gap-2">
+        <Sparkles size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">Assistant</span>
+        {time ? <span className={cn('ml-auto', META)}>{time}</span> : null}
       </div>
 
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
@@ -574,9 +576,7 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
         </div>
       ) : null}
 
-      {assistantText || model || Number(usage?.output_tokens) > 0 ? (
-        <AssistantActions text={assistantText} model={model} usage={usage} />
-      ) : null}
+      <AssistantActions text={assistantText} usage={usage} />
     </div>
   );
 }

@@ -35,6 +35,32 @@ export function formatDate(iso: string | null | undefined): string {
 }
 
 /**
+ * Compact in-thread timestamp for chat chrome.
+ * Same calendar day → `7:14 AM`; else `Jul 14, 7:14 AM` (year only if not current).
+ */
+export function formatMessageTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) {
+    return d.toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/**
  * Compact month/day label for a `YYYY-MM-DD` day key, e.g. `5/31`.
  * Parses the date parts directly so the label never shifts across timezones.
  *
