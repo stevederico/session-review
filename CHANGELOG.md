@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.54.0
+
+  Drop assistant header timestamp
+
 ## 0.53.0
 
   Fix dark surface contrast

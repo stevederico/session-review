@@ -543,7 +543,7 @@ type AssistantMessage = Extract<Message, { role: 'assistant' }>;
 
 /** Full-width, no-bubble assistant turn: quiet header, tools, then response. */
 function MessageAssistant({ message }: { message: AssistantMessage }) {
-  const { thinking, items, usage, timestamp } = message;
+  const { thinking, items, usage } = message;
   // Tools first, then prose — tools are the work; the reply summarizes after.
   const toolItems = items.filter(
     (item): item is Extract<AssistantItem, { kind: 'tool' }> => item.kind === 'tool',
@@ -552,14 +552,12 @@ function MessageAssistant({ message }: { message: AssistantMessage }) {
     (item): item is Extract<AssistantItem, { kind: 'text' }> => item.kind === 'text',
   );
   const assistantText = textItems.map((item) => item.text).join('\n\n');
-  const time = formatMessageTime(timestamp);
 
   return (
     <div className="group/message flex flex-col gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_400px]">
       <div className="flex w-full items-center gap-2">
         <Sparkles size={SMALL_ICON_SIZE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground">Assistant</span>
-        {time ? <span className={cn('ml-auto', META)}>{time}</span> : null}
       </div>
 
       {thinking ? <ThinkingDisclosure text={thinking} /> : null}
