@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.58.0
+
+  Softer selected sidebar row
+
 ## 0.57.0
 
   User time on hover only
