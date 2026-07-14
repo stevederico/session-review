@@ -6,7 +6,6 @@ import TrendingUp from '@stevederico/skateboard-ui/icons/TrendingUp';
 import DollarSign from '@stevederico/skateboard-ui/icons/DollarSign';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import BarChart3 from '@stevederico/skateboard-ui/icons/ChartColumn';
-import Header from '@stevederico/skateboard-ui/Header';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
 import {
@@ -259,30 +258,24 @@ export default function AnalyticsView() {
 
   if (loading) {
     return (
-      <>
-        <Header title="Analytics" />
-        <div className="flex flex-1 items-center justify-center p-8">
-          <Spinner className="size-6" />
-        </div>
-      </>
+      <div className="flex flex-1 items-center justify-center p-8">
+        <Spinner className="size-6" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Header title="Analytics" />
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <CircleAlert size={24} />
-            </EmptyMedia>
-            <EmptyTitle>Failed to load analytics</EmptyTitle>
-            <EmptyDescription>{error}</EmptyDescription>
-          </EmptyHeader>
-          <Button onClick={handleRetry}>Try again</Button>
-        </Empty>
-      </>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CircleAlert size={24} />
+          </EmptyMedia>
+          <EmptyTitle>Failed to load analytics</EmptyTitle>
+          <EmptyDescription>{error}</EmptyDescription>
+        </EmptyHeader>
+        <Button onClick={handleRetry}>Try again</Button>
+      </Empty>
     );
   }
 
@@ -293,20 +286,17 @@ export default function AnalyticsView() {
 
   if (!totals || totals.sessions === 0) {
     return (
-      <>
-        <Header title="Analytics" />
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <BarChart3 size={24} />
-            </EmptyMedia>
-            <EmptyTitle>No usage yet</EmptyTitle>
-            <EmptyDescription>
-              Once you have coding-agent sessions, your usage and cost stats will appear here.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <BarChart3 size={24} />
+          </EmptyMedia>
+          <EmptyTitle>No usage yet</EmptyTitle>
+          <EmptyDescription>
+            Once you have coding-agent sessions, your usage and cost stats will appear here.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -390,9 +380,7 @@ export default function AnalyticsView() {
   );
 
   return (
-    <>
-      <Header title="Analytics" />
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+    <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {statCards.map(({ key, label, value, Icon, onClick }) => {
             const interactive = Boolean(onClick);
@@ -551,7 +539,6 @@ export default function AnalyticsView() {
             })}
           </div>
         )}
-      </div>
-    </>
+    </div>
   );
 }

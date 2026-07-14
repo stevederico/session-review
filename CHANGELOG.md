@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.0
+
+  Drop Analytics content header
+
 ## 0.36.0
 
   Hide search on Analytics
