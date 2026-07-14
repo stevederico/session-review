@@ -316,15 +316,25 @@ function MessageSystem({ text }: { text: string }) {
 /** Compact meta line style (timestamps, secondary chrome). */
 const META = 'text-xs tabular-nums text-muted-foreground';
 
-/** Right-aligned user prompt bubble with a timestamp beneath it. */
+/** Right-aligned user prompt bubble; timestamp shows on hover. */
 function MessageUser({ text, timestamp }: { text: string; timestamp?: string }) {
   const time = formatMessageTime(timestamp);
   return (
-    <div className="flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
+    <div className="group/user flex flex-col items-end gap-1 [content-visibility:auto] [contain-intrinsic-size:auto_80px]">
       <div className="max-w-[min(100%,42rem)] rounded-2xl rounded-br-sm bg-accent px-4 py-3 text-base leading-relaxed text-foreground">
         <Markdown className="break-words text-base leading-relaxed">{text}</Markdown>
       </div>
-      {time ? <span className={cn('px-1', META)}>{time}</span> : null}
+      {time ? (
+        <span
+          className={cn(
+            'px-1 transition-opacity',
+            META,
+            'opacity-0 group-hover/user:opacity-100 group-focus-within/user:opacity-100',
+          )}
+        >
+          {time}
+        </span>
+      ) : null}
     </div>
   );
 }

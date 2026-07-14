@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.57.0
+
+  User time on hover only
+
 ## 0.56.0
 
   High-contrast selected sidebar row
