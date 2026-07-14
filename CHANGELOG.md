@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.38.0
+
+  Drop Analytics sidebar blurb
+
 ## 0.37.0
 
   Drop Analytics content header

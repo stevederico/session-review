@@ -397,15 +397,7 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
               </div>
             </SidebarGroupContent>
           </SidebarGroup>
-        ) : (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <p className="px-3 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-                Usage and cost analytics for local sessions.
-              </p>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        ) : null}
       </SidebarContent>
 
       <SidebarFooter className="gap-2">
