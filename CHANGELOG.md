@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.0
+
+  Conversations in app sidebar
+  Browse Analytics logo picker
+
 ## 0.23.0
 
   Ignore SQLite from Vite watch

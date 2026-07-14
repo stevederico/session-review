@@ -3,16 +3,16 @@
  *
  * Session Review is a local, read-only viewer for coding-agent transcripts
  * (claude under ~/.claude/projects, grok under ~/.grok/sessions).
- * Two routes:
- *   - home      → Browse (projects → sessions → transcript), with global
- *                 full-text search merged into the top bar
- *   - analytics → Token usage and estimated cost
+ * Shell:
+ *   - sidebar logo picker → Browse | Analytics
+ *   - sidebar list → conversations (Browse mode)
+ *   - main → transcript (home) or analytics
  */
 import './assets/styles.css';
 import { createSkateboardApp } from '@stevederico/skateboard-ui/App';
 import type { AppRoute } from '@stevederico/skateboard-ui/App';
-import Layout from '@stevederico/skateboard-ui/Layout';
 import constants from './constants.json';
+import AppLayout from './components/AppLayout';
 import BrowseView from './components/BrowseView';
 import AnalyticsView from './components/AnalyticsView';
 import SettingsView from './components/SettingsView';
@@ -27,6 +27,6 @@ createSkateboardApp({
   constants,
   appRoutes,
   defaultRoute: 'home',
-  // Override the shell settings page so transcript reindexing lives under Settings.
-  overrides: { layout: Layout, settings: SettingsView },
+  // Custom layout: mode picker + conversation list in the sidebar.
+  overrides: { layout: AppLayout, settings: SettingsView },
 });

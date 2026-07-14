@@ -25,7 +25,8 @@ The backend scans both agent homes on first request (incremental by mtime therea
 ## ✨ Features
 
 ### 📂 **Browse**
-- **Master/detail viewer** — pick a project, pick a session, read the full transcript
+- **Sidebar conversations** — filter/sort sessions in the shell sidebar; transcript opens in the main pane
+- **Mode picker** — Browse / Analytics switch where the logo sits
 - **Multi-source** — claude and grok sessions in one list (source badge + matching resume command)
 - **Full-fidelity rendering** — user prompts, assistant markdown, collapsible thinking and tool-call blocks
 - **Per-session metadata** — model, git branch, message count, estimated cost
