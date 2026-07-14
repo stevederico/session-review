@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.0
+
+  Simpler selected convo style
+
 ## 0.39.0
 
   Simplify landing tagline

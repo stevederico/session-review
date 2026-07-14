@@ -95,33 +95,14 @@ const SessionRow = memo(function SessionRow({
         aria-current={isSelected ? 'true' : undefined}
         aria-label={`${title}${meta ? `, ${meta}` : ''}${isSelected ? ', selected' : ''}`}
         className={cn(
-          'flex w-full flex-col gap-0.5 rounded-md border border-transparent py-2 pr-2 pl-2 text-left outline-none transition-colors',
-          'hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
-          isSelected
-            ? 'border-border bg-accent font-medium shadow-sm ring-1 ring-app/30'
-            : null,
+          'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left outline-none transition-colors',
+          'focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          isSelected ? 'bg-muted' : 'hover:bg-accent',
         )}
       >
-        <span className="flex w-full min-w-0 items-center gap-1.5 text-foreground">
-          {isSelected ? (
-            <span
-              className="bg-app size-1.5 shrink-0 rounded-full"
-              aria-hidden
-            />
-          ) : null}
-          <span className={cn('min-w-0 flex-1 truncate text-sm', isSelected && 'font-semibold')}>
-            {title}
-          </span>
-        </span>
+        <span className="w-full truncate text-sm text-foreground">{title}</span>
         {meta ? (
-          <span
-            className={cn(
-              'w-full truncate text-xs',
-              isSelected ? 'pl-3 text-foreground/70' : 'text-muted-foreground',
-            )}
-          >
-            {meta}
-          </span>
+          <span className="w-full truncate text-xs text-muted-foreground">{meta}</span>
         ) : null}
       </button>
     </li>
