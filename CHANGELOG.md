@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.0
+
+  Borderless info button
+
 ## 0.31.0
 
   Sidebar list render perf

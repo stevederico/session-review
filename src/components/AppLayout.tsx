@@ -63,12 +63,12 @@ export default function AppLayout() {
                 onSelect={handleSelectSession}
                 className="h-full min-w-0 flex-1"
               />
-              <div className="flex shrink-0 items-center border-l border-border px-1.5">
+              <div className="flex shrink-0 items-center pr-1.5">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-8"
+                  className="size-8 border-0 shadow-none"
                   aria-label={
                     sessionId
                       ? 'Conversation info'
