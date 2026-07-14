@@ -280,3 +280,27 @@ test('valid GFM table still parses (regression guard)', () => {
   assert.equal(token.header.length, 2);
   assert.equal(token.rows.length, 2);
 });
+
+test('single-column GFM table parses (not raw pipes)', () => {
+  const src = [
+    '| Path |',
+    '|---|',
+    '| /Users/dev/projects |',
+    '| /Users/dev/projects/session-review |',
+  ].join('\n');
+  const [token] = parseMarkdown(src);
+  assert.equal(token.type, 'table');
+  if (token.type !== 'table') return;
+  assert.deepEqual(token.header, ['Path']);
+  assert.equal(token.rows.length, 2);
+  assert.equal(token.rows[0][0], '/Users/dev/projects');
+  assert.equal(token.rows[1][0], '/Users/dev/projects/session-review');
+});
+
+test('single-column separator with spaces parses', () => {
+  const [token] = parseMarkdown('| Name |\n| --- |\n| alpha |');
+  assert.equal(token.type, 'table');
+  if (token.type !== 'table') return;
+  assert.deepEqual(token.header, ['Name']);
+  assert.deepEqual(token.rows, [['alpha']]);
+});

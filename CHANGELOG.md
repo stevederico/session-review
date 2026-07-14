@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.66.0
+
+  Fix single-column markdown tables
+
 ## 0.65.0
 
   Drop dead tag API

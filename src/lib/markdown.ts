@@ -55,7 +55,10 @@ const BLOCKQUOTE_RE = /^\s*>\s?(.*)$/;
 const ORDERED_RE = /^(\s*)(\d+)[.)]\s+(.*)$/;
 const UNORDERED_RE = /^(\s*)[-*+]\s+(.*)$/;
 const TASK_RE = /^\[([ xX])\]\s+(.*)$/;
-const TABLE_SEP_RE = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)+\|?\s*$/;
+// One or more dash-cells (GFM allows single-column tables like `| Path |` / `|---|`).
+// The old `+` quantifier required 2+ columns and left one-column tables as raw text.
+const TABLE_SEP_RE =
+  /^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)*\|?\s*$/;
 
 // --- inline-level regexes (ported from the former renderer INLINE_RULES) -----
 // Sticky; matched at the current scan position. Order mirrors historical priority.
