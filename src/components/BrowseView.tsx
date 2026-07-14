@@ -1,12 +1,11 @@
 /**
- * Browse main pane: search + open transcript for the session selected in the sidebar.
- * Selection is driven by `?session=` (set by AppSidebar / HeaderSearch).
+ * Browse main pane: transcript for the session selected in the sidebar.
+ * Selection is driven by `?session=` (set by AppSidebar / layout HeaderSearch).
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
-import { Separator } from '@stevederico/skateboard-ui/shadcn/ui/separator';
 import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
 import {
@@ -27,7 +26,6 @@ import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
 import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
 import { formatCost, shortModel } from '../lib/format';
 import Transcript from './Transcript';
-import HeaderSearch from './HeaderSearch';
 import ResumeKey from './ResumeKey';
 import {
   AUTO_DETECT,
@@ -71,7 +69,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
  * Conversation list lives in AppSidebar; this view reads `?session=`.
  */
 export default function BrowseView() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const selectedSessionId = searchParams.get('session') ?? '';
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -123,13 +121,6 @@ export default function BrowseView() {
     void loadDetail(selectedSessionId);
   }, [selectedSessionId, loadDetail]);
 
-  /** Open a conversation from global search (updates URL for the sidebar selection). */
-  const handleSelectSession = (id: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set('session', id);
-    setSearchParams(next, { replace: true });
-  };
-
   /**
    * File the open conversation under a project, or clear with AUTO_DETECT.
    * Refreshes detail and notifies the sidebar to reload its list.
@@ -162,13 +153,6 @@ export default function BrowseView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-(--header-height) shrink-0 items-center gap-2">
-        <div className="flex w-full items-center gap-2 px-4 lg:px-6">
-          <HeaderSearch onSelect={handleSelectSession} className="w-full max-w-xl" />
-        </div>
-      </header>
-      <Separator />
-
       {status ? (
         <p
           role="status"

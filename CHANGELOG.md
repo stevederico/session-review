@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.0
+
+  Search above content pane
+
 ## 0.25.0
 
   Move filters above Settings
