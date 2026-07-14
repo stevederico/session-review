@@ -215,6 +215,9 @@ function deriveMessages(records: unknown[]): Message[] {
         }
       }
 
+      // Skip empty assistant records (no text/tools/thinking).
+      if (items.length === 0 && thinkingParts.length === 0) continue;
+
       messages.push({
         role: 'assistant',
         thinking: thinkingParts.join('\n\n'),
@@ -300,7 +303,39 @@ function deriveMessages(records: unknown[]): Message[] {
     // 'summary' and unknown types are skipped.
   }
 
-  return messages;
+  // Agent steps arrive as many short assistant records (often one tool each).
+  // Merge consecutive assistants so all tools share one fold, not N× "1 tool call".
+  return mergeConsecutiveAssistants(messages);
+}
+
+/**
+ * Fold consecutive assistant messages into one turn.
+ * Between real user messages the agent often emits many tool-only records;
+ * without this each becomes its own "1 tool call" disclosure.
+ */
+function mergeConsecutiveAssistants(messages: Message[]): Message[] {
+  const out: Message[] = [];
+  for (const msg of messages) {
+    const prev = out[out.length - 1];
+    if (msg.role === 'assistant' && prev?.role === 'assistant') {
+      prev.items.push(...msg.items);
+      if (msg.thinking) {
+        prev.thinking = prev.thinking
+          ? `${prev.thinking}\n\n${msg.thinking}`
+          : msg.thinking;
+      }
+      if (msg.model) prev.model = msg.model;
+      if (msg.usage) prev.usage = msg.usage;
+      if (msg.timestamp) prev.timestamp = msg.timestamp;
+      continue;
+    }
+    if (msg.role === 'assistant') {
+      out.push({ ...msg, items: [...msg.items] });
+    } else {
+      out.push(msg);
+    }
+  }
+  return out;
 }
 
 /** Compact meta line style (timestamps, secondary chrome). */

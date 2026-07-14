@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.67.0
+
+  Merge consecutive tool turns
+
 ## 0.66.0
 
   Fix single-column markdown tables
