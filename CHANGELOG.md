@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.44.0
+
+  Auto-hide overlay scrollbars
+
 ## 0.43.0
 
   Wrap resume command in info
