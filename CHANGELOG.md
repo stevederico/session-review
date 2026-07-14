@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.51.0
+
+  Tools folded by default
+
 ## 0.50.0
 
   Match assistant row label chrome

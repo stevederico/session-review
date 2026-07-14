@@ -361,11 +361,11 @@ function ThinkingDisclosure({ text }: { text: string }) {
 
 /**
  * Group fold for all tool calls in an assistant turn (same pattern as thinking).
- * Collapsed by default; opens when any tool errored so failures aren't hidden.
+ * Always collapsed by default.
  */
 function ToolsDisclosure({ tools }: { tools: ToolCall[] }) {
   const hasError = tools.some((t) => t.isError);
-  const [open, setOpen] = useState(hasError);
+  const [open, setOpen] = useState(false);
   const count = tools.length;
   const label = count === 1 ? '1 tool call' : `${count} tool calls`;
   const names = tools
