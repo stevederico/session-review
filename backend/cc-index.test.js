@@ -56,9 +56,15 @@ test('priceFor defaults unknown models to sonnet pricing', () => {
   });
 });
 
-test('priceFor resolves grok family pricing', () => {
-  assert.equal(priceFor('grok-4.5').in, 3);
-  assert.equal(priceFor('grok-build').out, 15);
+test('priceFor resolves grok family pricing (docs.x.ai short context)', () => {
+  assert.equal(priceFor('grok-4.5').in, 2);
+  assert.equal(priceFor('grok-4.5').cacheRead, 0.3);
+  assert.equal(priceFor('grok-4.5').out, 6);
+  assert.equal(priceFor('grok-build').in, 1);
+  assert.equal(priceFor('grok-build').out, 2);
+  // long context ≥200k
+  assert.equal(priceFor('grok-4.5', 200_000).in, 4);
+  assert.equal(priceFor('grok-4.5', 200_000).out, 12);
 });
 
 test('toIso converts unix seconds to ISO', () => {

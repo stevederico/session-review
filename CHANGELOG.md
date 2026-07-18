@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.68.0
+
+  Real Grok API pricing
+  From docs.x.ai
+
 ## 0.67.0
 
   Merge consecutive tool turns

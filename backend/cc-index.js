@@ -34,26 +34,49 @@ const DB_DIR = join(import.meta.dirname, 'databases');
 const DB_PATH = join(DB_DIR, 'ccindex.db');
 
 /** Pricing per 1M tokens (USD). Matched by substring of the model id. */
-const PRICING = {
+// Claude list rates. Grok: https://docs.x.ai/developers/pricing (per 1M tokens).
+// Long-context (≥200k prompt): higher rate for all tokens in the request.
+const CLAUDE_PRICING = {
   opus:   { in: 15, out: 75, cacheWrite: 18.75, cacheRead: 1.5 },
   sonnet: { in: 3,  out: 15, cacheWrite: 3.75,  cacheRead: 0.3 },
   haiku:  { in: 0.8, out: 4, cacheWrite: 1,     cacheRead: 0.08 },
-  // yagni: public list-price placeholders for grok family; refine if billing matters
-  grok:   { in: 3,  out: 15, cacheWrite: 0.75,  cacheRead: 0.75 },
 };
 
-/** Resolve the pricing table for a model id by substring match. */
-export function priceFor(model) {
+/** short / long: [input, cachedInput, output]. cacheWrite N/A on xAI → 0. */
+const GROK_PRICING = {
+  'grok-4.5':   { short: [2.0, 0.30, 6.0],  long: [4.0, 0.60, 12.0] },
+  'grok-4.3':   { short: [1.25, 0.20, 2.5], long: [2.5, 0.40, 5.0] },
+  'grok-4.20':  { short: [1.25, 0.20, 2.5], long: [2.5, 0.40, 5.0] },
+  'grok-build': { short: [1.0, 0.20, 2.0],  long: [2.0, 0.40, 4.0] },
+};
+const LONG_CTX = 200_000;
+
+function grokFamily(model) {
   const m = (model || '').toLowerCase();
-  if (m.includes('opus')) return PRICING.opus;
-  if (m.includes('haiku')) return PRICING.haiku;
-  if (m.includes('grok')) return PRICING.grok;
-  return PRICING.sonnet;
+  if (m.includes('grok-build')) return 'grok-build';
+  if (m.includes('grok-4.3')) return 'grok-4.3';
+  if (m.includes('grok-4.20') || m.includes('grok-4-20')) return 'grok-4.20';
+  return 'grok-4.5';
+}
+
+/** Resolve the pricing table for a model id by substring match. */
+export function priceFor(model, promptTokens = 0) {
+  const m = (model || '').toLowerCase();
+  if (m.includes('opus')) return CLAUDE_PRICING.opus;
+  if (m.includes('haiku')) return CLAUDE_PRICING.haiku;
+  if (m.includes('grok')) {
+    const tier = GROK_PRICING[grokFamily(m)];
+    const [inp, cr, out] = promptTokens >= LONG_CTX ? tier.long : tier.short;
+    return { in: inp, out, cacheWrite: 0, cacheRead: cr };
+  }
+  return CLAUDE_PRICING.sonnet;
 }
 
 /** Estimate USD cost for a token bundle under the model's pricing. */
 export function costOf({ in_tok = 0, out_tok = 0, cache_create = 0, cache_read = 0, model }) {
-  const p = priceFor(model);
+  const m = (model || '').toLowerCase();
+  const promptish = m.includes('grok') ? (in_tok + cache_read) : 0;
+  const p = priceFor(model, promptish);
   return (in_tok * p.in + out_tok * p.out + cache_create * p.cacheWrite + cache_read * p.cacheRead) / 1e6;
 }
 
