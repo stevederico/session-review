@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Session Review</h1>
-  <h3>your coding-agent sessions, local — react + hono + sqlite</h3>
+  <h3>your coding-agent sessions, local — react + rust + sqlite</h3>
 </div>
 
 <br />
@@ -14,6 +14,7 @@ Coding agents store every session as local transcripts — claude under `~/.clau
 ```bash
 npm run install-all
 npm run start
+cd backend && cargo run
 ```
 
 Frontend: http://localhost:5173 — Backend: http://localhost:8000
@@ -49,20 +50,20 @@ The backend scans both agent homes on first request (incremental by mtime therea
 |---|---|---|
 | **React** | 19 | Frontend UI |
 | **Vite** | 8 | Build / dev server |
-| **Hono** | 4 | Backend HTTP server (Node) |
-| **node:sqlite** | built-in | Index + FTS5 full-text search |
+| **Rust** | zero-crate | Backend HTTP server |
+| **libsqlite3** | system | Index + FTS5 full-text search |
 | **Tailwind CSS** | 4 | Styling (semantic tokens) |
-| **skateboard-ui** | 4.x | Application shell + shadcn components |
+| **skateboard-ui** | 5.1 | Application shell + shadcn components |
 
 <br />
 
 ## 🏗️ Architecture
 
-The backend indexer (`backend/cc-index.js`) walks coding-agent session stores (claude + grok), parses each transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Grok `updates.jsonl` streams are normalized into the same record shape as claude JSONL so the UI has one renderer. Full transcripts are read fresh from disk on demand.
+The backend indexer (`backend/src/cc.rs`) walks coding-agent session stores (claude + grok), parses each transcript, and upserts session metadata + an FTS5 table into a local SQLite cache. Grok `updates.jsonl` streams are normalized into the same record shape as claude JSONL so the UI has one renderer. Full transcripts are read fresh from disk on demand.
 
 ```
 ~/.claude/projects/*.jsonl  ─┐
-                             ├→ SQLite (FTS5) → Hono /api/cc/* → React UI
+                             ├→ SQLite (FTS5) → Rust /api/cc/* → React UI
 ~/.grok/sessions/<cwd>/<id>/ ┘
 ```
 
@@ -72,9 +73,10 @@ The backend indexer (`backend/cc-index.js`) walks coding-agent session stores (c
 
 ```bash
 npm test
+cd backend && cargo test --locked
 ```
 
-Runs Node's built-in test runner against the indexer helpers and formatters.
+`npm test` runs the frontend typecheck, formatter tests, and script tests. `cargo test` covers the session index and the skateboard API.
 
 <br />
 
