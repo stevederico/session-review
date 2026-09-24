@@ -15,8 +15,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
-import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
+import { CircleAlert, MessagesSquare } from 'lucide-react';
 import Transcript from './Transcript';
 import type { SessionDetail } from '../lib/sessionTypes';
 

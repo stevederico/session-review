@@ -16,20 +16,30 @@ npm-debug.log*
 .vscode/
 .idea/
 
-# Environment
+# Environment — never bake secrets (symlinks to shared secret files are the classic leak)
 .env
 .env.*
-
-# Local session index (personal transcripts — never bake into images)
-backend/databases/
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
+**/.env
+**/.env.*
+!**/.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
 
 # Build artifacts
 dist/
 build/
+backend/coverage/
+backend/target/
+
+# Local data — never bake into railway up images
+backend/databases/
+**/*.db
+**/*.db-journal
+**/*.db-shm
+**/*.db-wal
+uploads/
+**/uploads/
 
 # Misc
 *.md

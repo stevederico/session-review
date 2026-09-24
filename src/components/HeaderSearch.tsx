@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import Search from '@stevederico/skateboard-ui/icons/Search';
-import X from '@stevederico/skateboard-ui/icons/X';
-import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
+import { CircleAlert, Search, X } from 'lucide-react';
 import { apiRequestWithParams } from '@stevederico/skateboard-ui/Utilities';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import { Input } from '@stevederico/skateboard-ui/shadcn/ui/input';

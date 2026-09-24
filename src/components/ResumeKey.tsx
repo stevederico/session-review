@@ -5,9 +5,7 @@
  * (vercel-composition-patterns: patterns-explicit-variants).
  */
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import Copy from '@stevederico/skateboard-ui/icons/Copy';
-import Check from '@stevederico/skateboard-ui/icons/Check';
-import Terminal from '@stevederico/skateboard-ui/icons/Terminal';
+import { Check, Copy, Terminal } from 'lucide-react';
 import { useCopy } from '../lib/useCopy';
 import { resumeCommand } from '../lib/resume';
 

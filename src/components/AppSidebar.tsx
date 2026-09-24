@@ -4,7 +4,6 @@
 import { memo, useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import type { ComponentProps } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
-import DynamicIcon from '@stevederico/skateboard-ui/DynamicIcon';
 import { getState } from '@stevederico/skateboard-ui/Context';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
@@ -41,11 +40,16 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import Settings from '@stevederico/skateboard-ui/icons/Settings';
-import ChevronDown from '@stevederico/skateboard-ui/icons/ChevronDown';
-import Check from '@stevederico/skateboard-ui/icons/Check';
-import FolderOpen from '@stevederico/skateboard-ui/icons/FolderOpen';
-import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
+import type { LucideProps } from 'lucide-react';
+import {
+  ChartBar,
+  Check,
+  ChevronDown,
+  CircleAlert,
+  FolderOpen,
+  MessagesSquare,
+  Settings,
+} from 'lucide-react';
 import { relativeTime, folderName } from '../lib/format';
 import {
   ALL_PROJECTS,
@@ -59,6 +63,17 @@ import {
 
 /** Props forwarded to the shadcn Sidebar root. */
 type AppSidebarProps = Omit<ComponentProps<typeof SidebarRoot>, 'collapsible'>;
+
+/**
+ * Render one of the two mode-picker icons.
+ *
+ * @param props - Lucide props plus the icon name from {@link APP_MODES}.
+ * @returns ChartBar for analytics, MessagesSquare for browse.
+ */
+function ModeIcon({ name, ...props }: { name: string } & LucideProps) {
+  if (name === 'chart-bar') return <ChartBar {...props} />;
+  return <MessagesSquare {...props} />;
+}
 
 const modePickerItemClass =
   'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
@@ -269,7 +284,7 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
                       aria-expanded={modeOpen}
                     >
                       <div className="bg-app -ml-2 flex size-8 shrink-0 items-center justify-center rounded-lg">
-                        <DynamicIcon
+                        <ModeIcon
                           name={activeModeMeta.icon}
                           strokeWidth={2}
                           className="text-background"
@@ -297,7 +312,7 @@ export default function AppSidebar({ variant = 'inset', ...props }: AppSidebarPr
                         className={modePickerItemClass}
                         onClick={() => handleSelectMode(mode.value)}
                       >
-                        <DynamicIcon name={mode.icon} size={16} strokeWidth={2} />
+                        <ModeIcon name={mode.icon} size={16} strokeWidth={2} />
                         <span className="min-w-0 flex-1 truncate text-left">{mode.label}</span>
                         {isSelected ? (
                           <Check className="size-4 shrink-0 opacity-70" aria-hidden />
