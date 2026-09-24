@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import MessagesSquare from '@stevederico/skateboard-ui/icons/MessagesSquare';
-import MessageCircle from '@stevederico/skateboard-ui/icons/MessageCircle';
-import TrendingUp from '@stevederico/skateboard-ui/icons/TrendingUp';
-import DollarSign from '@stevederico/skateboard-ui/icons/DollarSign';
-import CircleAlert from '@stevederico/skateboard-ui/icons/CircleAlert';
-import BarChart3 from '@stevederico/skateboard-ui/icons/ChartColumn';
+import {
+  ChartColumn,
+  CircleAlert,
+  DollarSign,
+  MessageCircle,
+  MessagesSquare,
+  TrendingUp,
+} from 'lucide-react';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
 import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
 import {
@@ -289,7 +291,7 @@ export default function AnalyticsView() {
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <BarChart3 size={24} />
+            <ChartColumn size={24} />
           </EmptyMedia>
           <EmptyTitle>No usage yet</EmptyTitle>
           <EmptyDescription>

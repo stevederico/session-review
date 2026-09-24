@@ -1,19 +1,20 @@
 import { memo, useMemo, useState, useDeferredValue, useLayoutEffect, useRef } from 'react';
-import type { ReactElement } from 'react';
-import type { IconProps } from '@stevederico/skateboard-ui/icons';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Bot,
+  Brain,
+  Check,
+  ChevronRight,
+  Copy,
+  FilePen,
+  FileText,
+  Globe,
+  Search,
+  Terminal,
+  Wrench,
+  X,
+} from 'lucide-react';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import Brain from '@stevederico/skateboard-ui/icons/Brain';
-import Wrench from '@stevederico/skateboard-ui/icons/Wrench';
-import Terminal from '@stevederico/skateboard-ui/icons/Terminal';
-import FileText from '@stevederico/skateboard-ui/icons/FileText';
-import FilePen from '@stevederico/skateboard-ui/icons/FilePen';
-import Search from '@stevederico/skateboard-ui/icons/Search';
-import Bot from '@stevederico/skateboard-ui/icons/Bot';
-import Globe from '@stevederico/skateboard-ui/icons/Globe';
-import ChevronRight from '@stevederico/skateboard-ui/icons/ChevronRight';
-import Check from '@stevederico/skateboard-ui/icons/Check';
-import Copy from '@stevederico/skateboard-ui/icons/Copy';
-import X from '@stevederico/skateboard-ui/icons/X';
 import Markdown from '../lib/markdownRender';
 import { formatMessageTime, formatTokens } from '../lib/format';
 import { useCopy } from '../lib/useCopy';
@@ -24,8 +25,8 @@ const SMALL_ICON_SIZE = 14;
 const PREVIEW_MAX = 48;
 const RESULT_MAX = 6000;
 
-/** An icon component from the skateboard-ui icon set. */
-type IconComponent = (props: IconProps) => ReactElement;
+/** An icon component from lucide-react. */
+type IconComponent = LucideIcon;
 
 /** A paired tool call: its input plus the result that came back. */
 interface ToolCall {

@@ -8,7 +8,7 @@ import TabBar from '@stevederico/skateboard-ui/TabBar';
 import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
 import { getState } from '@stevederico/skateboard-ui/Context';
 import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
-import Info from '@stevederico/skateboard-ui/icons/Info';
+import { Info } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 import HeaderSearch from './HeaderSearch';
 import SessionInfoDialog from './SessionInfoDialog';

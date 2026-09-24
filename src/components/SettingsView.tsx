@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ShellSettingsView from '@stevederico/skateboard-ui/SettingsView';
-import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
+import { apiRequest, getCSRFToken } from '@stevederico/skateboard-ui/Utilities';
 import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
 import pkg from '@package';
 import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
@@ -11,7 +11,7 @@ import {
   CardDescription,
   CardAction,
 } from '@stevederico/skateboard-ui/shadcn/ui/card';
-import RefreshCw from '@stevederico/skateboard-ui/icons/RefreshCw';
+import { RefreshCw } from 'lucide-react';
 import { notifySessionsChanged } from '../lib/sessionTypes';
 
 /**
@@ -31,9 +31,13 @@ export default function SettingsView() {
     setIsReindexing(true);
     setStatus('');
     try {
+      const csrfToken = getCSRFToken();
       const result = await apiRequest<{ files?: number; changed?: number }>(
         '/cc/reindex',
-        { method: 'POST' },
+        {
+          method: 'POST',
+          headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
+        },
       );
       const files = result?.files ?? 0;
       const changed = result?.changed ?? 0;
