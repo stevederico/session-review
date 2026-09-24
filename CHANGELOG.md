@@ -1,5 +1,10 @@
 # Changelog
 
+0.69.0
+
+  Migrate skateboard 5.6
+  Port session index
+
 ## 0.68.0
 
   Real Grok API pricing

@@ -11,10 +11,7 @@
 
 import { createElement as h, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import Square from '@stevederico/skateboard-ui/icons/Square';
-import SquareCheck from '@stevederico/skateboard-ui/icons/SquareCheck';
-import Copy from '@stevederico/skateboard-ui/icons/Copy';
-import Check from '@stevederico/skateboard-ui/icons/Check';
+import { Check, Copy, Square, SquareCheck } from 'lucide-react';
 import { parseMarkdown, parseInline } from './markdown';
 import type { InlineToken, BlockToken, ListItem } from './markdown';
 import { useCopy } from './useCopy';
