@@ -1,5 +1,9 @@
 # Changelog
 
+0.69.1
+
+  Pin base images
+
 0.69.0
 
   Migrate skateboard 5.6
