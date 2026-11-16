@@ -3,10 +3,10 @@
  */
 import { memo, useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import type { ComponentProps } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from '@stevederico/skateboard-ui/router';
 import { getState } from '@stevederico/skateboard-ui/Context';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
@@ -18,29 +18,29 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
+} from '@stevederico/skateboard-ui/ui/sidebar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@stevederico/skateboard-ui/shadcn/ui/popover';
+} from '@stevederico/skateboard-ui/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@stevederico/skateboard-ui/shadcn/ui/select';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
+} from '@stevederico/skateboard-ui/ui/select';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-} from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import type { LucideProps } from 'lucide-react';
+} from '@stevederico/skateboard-ui/ui/empty';
+import type { LucideProps } from '@stevederico/skateboard-ui/icons';
 import {
   ChartBar,
   Check,
@@ -49,7 +49,7 @@ import {
   FolderOpen,
   MessagesSquare,
   Settings,
-} from 'lucide-react';
+} from '@stevederico/skateboard-ui/icons';
 import { relativeTime, folderName } from '../lib/format';
 import {
   ALL_PROJECTS,

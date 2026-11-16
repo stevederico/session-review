@@ -12,10 +12,11 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "types": ["vite/client", "node"],
+    "types": ["vite/client"],
     "paths": {
       "@package": ["./package.json"]
     }
   },
-  "include": ["src", "vite.config.ts", "vite.plugins.ts", "scripts/verify-ui-version.ts"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

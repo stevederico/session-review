@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import { CircleAlert, Search, X } from 'lucide-react';
+import { CircleAlert, Search, X } from '@stevederico/skateboard-ui/icons';
 import { apiRequestWithParams } from '@stevederico/skateboard-ui/Utilities';
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import { Input } from '@stevederico/skateboard-ui/shadcn/ui/input';
-import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
+import { Input } from '@stevederico/skateboard-ui/ui/input';
+import { Badge } from '@stevederico/skateboard-ui/ui/badge';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
 import { relativeTime } from '../lib/format';
 
 /** Debounce delay (ms) before firing a search request. */

@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import ShellSettingsView from '@stevederico/skateboard-ui/SettingsView';
 import { apiRequest, getCSRFToken } from '@stevederico/skateboard-ui/Utilities';
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
 import pkg from '@package';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardAction,
-} from '@stevederico/skateboard-ui/shadcn/ui/card';
-import { RefreshCw } from 'lucide-react';
+} from '@stevederico/skateboard-ui/ui/card';
+import { RefreshCw } from '@stevederico/skateboard-ui/icons';
 import { notifySessionsChanged } from '../lib/sessionTypes';
 
 /**

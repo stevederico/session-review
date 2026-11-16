@@ -3,12 +3,12 @@
  * Browse/Analytics mode picker in the header, search above main content.
  */
 import { useState, type CSSProperties } from 'react';
-import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Outlet, useLocation, useNavigate, useSearchParams } from '@stevederico/skateboard-ui/router';
 import TabBar from '@stevederico/skateboard-ui/TabBar';
-import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/shadcn/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@stevederico/skateboard-ui/ui/sidebar';
 import { getState } from '@stevederico/skateboard-ui/Context';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
-import { Info } from 'lucide-react';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
+import { Info } from '@stevederico/skateboard-ui/icons';
 import AppSidebar from './AppSidebar';
 import HeaderSearch from './HeaderSearch';
 import SessionInfoDialog from './SessionInfoDialog';

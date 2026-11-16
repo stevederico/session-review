@@ -4,15 +4,15 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
-import { Badge } from '@stevederico/skateboard-ui/shadcn/ui/badge';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
+import { Badge } from '@stevederico/skateboard-ui/ui/badge';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@stevederico/skateboard-ui/shadcn/ui/dialog';
+} from '@stevederico/skateboard-ui/ui/dialog';
 import { formatCost, shortModel } from '../lib/format';
 import ResumeKey from './ResumeKey';
 import type { SessionDetail, SessionMetaData } from '../lib/sessionTypes';

@@ -4,8 +4,8 @@
  * Explicit single layout — no variant/boolean modes
  * (vercel-composition-patterns: patterns-explicit-variants).
  */
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
-import { Check, Copy, Terminal } from 'lucide-react';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
+import { Check, Copy, Terminal } from '@stevederico/skateboard-ui/icons';
 import { useCopy } from '../lib/useCopy';
 import { resumeCommand } from '../lib/resume';
 

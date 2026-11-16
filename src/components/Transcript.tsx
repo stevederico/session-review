@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useDeferredValue, useLayoutEffect, useRef } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '@stevederico/skateboard-ui/icons';
 import {
   Bot,
   Brain,
@@ -13,8 +13,8 @@ import {
   Terminal,
   Wrench,
   X,
-} from 'lucide-react';
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
+} from '@stevederico/skateboard-ui/icons';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
 import Markdown from '../lib/markdownRender';
 import { formatMessageTime, formatTokens } from '../lib/format';
 import { useCopy } from '../lib/useCopy';
@@ -25,7 +25,7 @@ const SMALL_ICON_SIZE = 14;
 const PREVIEW_MAX = 48;
 const RESULT_MAX = 6000;
 
-/** An icon component from lucide-react. */
+/** An icon component from the skateboard-ui icon set. */
 type IconComponent = LucideIcon;
 
 /** A paired tool call: its input plus the result that came back. */

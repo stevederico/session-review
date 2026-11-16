@@ -7,18 +7,18 @@ import {
   MessageCircle,
   MessagesSquare,
   TrendingUp,
-} from 'lucide-react';
+} from '@stevederico/skateboard-ui/icons';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-} from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
-import { Card, CardContent } from '@stevederico/skateboard-ui/shadcn/ui/card';
+} from '@stevederico/skateboard-ui/ui/empty';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
+import { Card, CardContent } from '@stevederico/skateboard-ui/ui/card';
 import {
   Table,
   TableHeader,
@@ -26,20 +26,20 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '@stevederico/skateboard-ui/shadcn/ui/table';
+} from '@stevederico/skateboard-ui/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@stevederico/skateboard-ui/shadcn/ui/select';
+} from '@stevederico/skateboard-ui/ui/select';
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from '@stevederico/skateboard-ui/shadcn/ui/tooltip';
-import { cn } from '@stevederico/skateboard-ui/shadcn/lib/utils';
+} from '@stevederico/skateboard-ui/ui/tooltip';
+import { cn } from '@stevederico/skateboard-ui/lib/utils';
 import {
   formatCost,
   formatTokens,

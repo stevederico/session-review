@@ -12,7 +12,7 @@ import { lazy, Suspense } from 'react';
 import './assets/styles.css';
 import { createSkateboardApp } from '@stevederico/skateboard-ui/App';
 import type { AppRoute } from '@stevederico/skateboard-ui/App';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
 import constants from './constants.json';
 import AppLayout from './components/AppLayout';
 import BrowseView from './components/BrowseView';

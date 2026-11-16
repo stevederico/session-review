@@ -4,18 +4,18 @@
  * Session metadata lives in SessionInfoDialog (info button on the search bar).
  */
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams } from '@stevederico/skateboard-ui/router';
 import { apiRequest } from '@stevederico/skateboard-ui/Utilities';
-import { Button } from '@stevederico/skateboard-ui/shadcn/ui/button';
-import { Spinner } from '@stevederico/skateboard-ui/shadcn/ui/spinner';
+import { Button } from '@stevederico/skateboard-ui/ui/button';
+import { Spinner } from '@stevederico/skateboard-ui/ui/spinner';
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
-} from '@stevederico/skateboard-ui/shadcn/ui/empty';
-import { CircleAlert, MessagesSquare } from 'lucide-react';
+} from '@stevederico/skateboard-ui/ui/empty';
+import { CircleAlert, MessagesSquare } from '@stevederico/skateboard-ui/icons';
 import Transcript from './Transcript';
 import type { SessionDetail } from '../lib/sessionTypes';
 
